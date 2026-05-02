@@ -1,0 +1,25 @@
+# Java
+**/target/
+**/*.class
+**/*.jar
+
+# Maven
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+
+# React
+**/node_modules/
+**/build/
+
+# IDE
+**/.idea/
+**/.eclipse/
+**/*.iml
+**/.settings/
+**/.classpath
+**/.project
+
+# OS
+.DS_Store
+Thumbs.db
