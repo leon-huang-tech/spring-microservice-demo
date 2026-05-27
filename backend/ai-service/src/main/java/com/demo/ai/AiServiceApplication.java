@@ -1,4 +1,4 @@
-package com.demo.user;
+package com.demo.ai;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,9 +6,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-//@EnableCaching // See to CacheConfig
-public class UserServiceApplication {
+public class AiServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(UserServiceApplication.class, args);
+        SpringApplication.run(AiServiceApplication.class, args);
     }
 }

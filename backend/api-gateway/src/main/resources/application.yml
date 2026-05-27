@@ -27,6 +27,13 @@ spring:
           filters:
             - StripPrefix=0
 
+        # Route to ai-service
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - StripPrefix=0
 eureka:
   client:
     service-url:
@@ -50,3 +57,8 @@ springdoc:
         url: /user-service/v3/api-docs
       - name: order-service
         url: /order-service/v3/api-docs				
+      - name: ai-service
+        url: /ai-service/v3/api-docs				
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 86400000
