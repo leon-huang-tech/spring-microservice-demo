@@ -6,6 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.demo.order.exception.ResourceNotFoundException;
@@ -53,5 +57,20 @@ public class OrderService {
     @CacheEvict(value = "orders", allEntries = true)
     public void deleteOrder(Long id) {
         orderRepository.deleteById(id);
+    }
+    
+    public Page<Order> getOrdersPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return orderRepository.findAll(pageable);
+    }
+
+    @CacheEvict(value = "orders", allEntries = true)
+    public Order updateOrder(Long id, Order updated) {
+        Order order = getOrderById(id);
+        order.setProduct(updated.getProduct());
+        order.setAmount(updated.getAmount());
+        order.setStatus(updated.getStatus());
+        order.setUserId(updated.getUserId());
+        return orderRepository.save(order);
     }
 }
