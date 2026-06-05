@@ -1,21 +1,36 @@
 # Spring Microservice Demo
 
-A full-stack microservice application built with Java 17, Spring Boot 3, Spring Cloud, and React.
+A full-stack microservice application built with Java 17, Spring Boot 3, Spring Cloud, React, and Spring AI.
 
 ## Architecture
 
 ```
-Client (React)
+Client (React / Android / JMeter)
       |
       v
 API Gateway (port 8080)
+  - JWT Authentication Filter (centralized auth)
+  - Load Balancing
+  - Route to downstream services
       |
-      +---> User Service (port 8081) --> H2 Database + Redis Cache
+      +---> User Service (port 8081)
+      |       - User management
+      |       - JWT token generation (login)
+      |       - BCrypt password encryption
+      |       - Redis caching
+      |       - H2 Database
       |
-      +---> Order Service (port 8082) --> H2 Database + Redis Cache
-                  |
-                  +---> calls User Service via Feign + Eureka
-      
+      +---> Order Service (port 8082)
+      |       - Order management
+      |       - Redis caching
+      |       - H2 Database
+      |       - Calls User Service via Feign
+      |
+      +---> AI Service (port 8083)
+              - AI chat assistant
+              - Ollama integration (local LLM)
+              - Spring AI
+
 Service Registry: Eureka Server (port 8761)
 Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 ```
@@ -26,14 +41,15 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **Java 17**
 - **Spring Boot 3.2**
 - **Spring Cloud 2023**
-- **Spring Cloud Gateway** — API Gateway with load balancing
+- **Spring Cloud Gateway** — Centralized API Gateway with JWT authentication filter and load balancing
 - **Eureka** — Service discovery and registration
 - **Spring Data JPA** — Database access
 - **H2** — In-memory database
 - **Redis** — Caching layer (toggleable via Spring Profile)
 - **OpenFeign** — Declarative service-to-service REST client
 - **Resilience4j** — Circuit breaker pattern
-- **Spring Security + JWT** — Authentication and authorization
+- **Spring Security + JWT** — Authentication at Gateway level; token generation in user-service
+- **Spring AI + Ollama** — Local LLM integration for AI chat
 - **Springdoc OpenAPI** — Swagger API documentation
 - **Spring @RestControllerAdvice** — Centralized exception handling
 
@@ -42,10 +58,17 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **React Router** — Client-side routing
 - **Axios** — HTTP client
 
-### Monitoring
+### Mobile
+- **Kotlin** — Android client
+- **Jetpack Compose** — Declarative UI
+- **Retrofit** — HTTP client
+- **Navigation Compose** — Screen navigation
+
+### Testing & Monitoring
+- **JMeter** — API testing and performance testing
 - **Prometheus** — Metrics collection
 - **Grafana** — Metrics visualization and dashboards
-- **Spring Actuator** — Exposes application metrics
+- **Spring Actuator** — Application metrics exposure
 
 ### DevOps
 - **Docker + Docker Compose** — Containerization
@@ -55,85 +78,96 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 | Service | Port | Description |
 |---------|------|-------------|
 | Eureka Server | 8761 | Service registry |
-| API Gateway | 8080 | Single entry point |
-| User Service | 8081 | User management + JWT auth |
-| Order Service | 8082 | Order management |
-| Frontend | 3000 | React web application |
+| API Gateway | 8080 | Single entry point, JWT auth, load balancing |
+| User Service | 8081 | User management, JWT token generation |
+| Order Service | 8082 | Order management, cross-service calls |
+| AI Service | 8083 | AI chat assistant powered by Ollama |
 | Prometheus | 9090 | Metrics collection |
 | Grafana | 3000 | Metrics dashboard |
 
+## Authentication Architecture
+
+JWT authentication is handled centrally at the API Gateway level.
+
+```
+Client → API Gateway (verify JWT) → Downstream Services
+```
+
+- **Login / Register** — Public endpoints, no token required
+- **All other endpoints** — Require valid JWT Bearer token
+- **user-service** — Generates JWT on login, verifies password with BCrypt
+- **order-service / ai-service** — Trust Gateway, no duplicate JWT verification
+
+This avoids redundant token verification across services.
+
 ## Getting Started
+
+### Prerequisites
+- Java 17
+- Maven
+- Redis
+- Ollama with a model pulled (e.g. `ollama pull llama3.2:3b`)
 
 ### Option 1: Run with Docker
 
 ```bash
-# Build backend services first
 cd backend
 mvn package -DskipTests
-
-# Start all services
 cd ..
 docker-compose up --build
 ```
 
 ### Option 2: Run locally
 
-**Step 1: Start Eureka Server**
+Start services in this order:
+
 ```bash
-cd backend/eureka-server
-mvn spring-boot:run
+# 1. Eureka Server
+cd backend/eureka-server && mvn spring-boot:run
+
+# 2. User Service
+cd backend/user-service && mvn spring-boot:run
+
+# 3. Order Service
+cd backend/order-service && mvn spring-boot:run
+
+# 4. AI Service
+cd backend/ai-service && mvn spring-boot:run
+
+# 5. API Gateway
+cd backend/api-gateway && mvn spring-boot:run
+
+# 6. Frontend
+cd frontend && npm install && npm start
 ```
 
-**Step 2: Start User Service**
-```bash
-cd backend/user-service
-mvn spring-boot:run
-```
+### Optional: Start Monitoring
 
-**Step 3: Start Order Service**
-```bash
-cd backend/order-service
-mvn spring-boot:run
-```
-
-**Step 4: Start API Gateway**
-```bash
-cd backend/api-gateway
-mvn spring-boot:run
-```
-
-**Step 5: Start Frontend**
-```bash
-cd frontend
-npm install
-npm start
-```
-
-**Step 6: Start Monitoring (optional)**
 ```bash
 sudo systemctl start prometheus
 sudo systemctl start grafana-server
 ```
 
+### JMeter Testing
+Import `jmeter/api-test.jmx` into JMeter to run API tests.
+The test plan includes login and AI chat requests with token correlation.
+
 ## Redis Caching
 
-Redis caching is toggleable via Spring Profile.
+Toggleable via Spring Profile.
 
-**Enable cache:**
 ```yaml
+# Enable
 spring:
   profiles:
     active: cache
-```
 
-**Disable cache (default):**
-```yaml
-# Remove or comment out the profiles section
+# Disable (default) - remove or comment out
 ```
 
 ## API Endpoints
 
-All requests go through the API Gateway on port 8080.
+All requests go through API Gateway on port 8080.
 
 ### Authentication
 ```
@@ -142,33 +176,49 @@ Body: { "email": "alice@example.com", "password": "password123" }
 Returns: { "token": "eyJ..." }
 ```
 
-### Users (requires JWT token)
+### Users (JWT required)
 ```
-GET    /api/users          # Get all users
-GET    /api/users/{id}     # Get user by ID
-POST   /api/users/register # Register new user
-DELETE /api/users/{id}     # Delete user
+GET    /api/users
+GET    /api/users/{id}
+POST   /api/users/register
+DELETE /api/users/{id}
 ```
 
-### Orders (requires JWT token)
+### Orders (JWT required)
 ```
-GET    /api/orders              # Get all orders
-GET    /api/orders/{id}         # Get order by ID
-GET    /api/orders/user/{id}    # Get orders with user info (cross-service call)
-POST   /api/orders              # Create order
-DELETE /api/orders/{id}         # Delete order
+GET    /api/orders
+GET    /api/orders/{id}
+GET    /api/orders/user/{id}
+POST   /api/orders
+DELETE /api/orders/{id}
+```
+
+### AI Chat (JWT required)
+```
+POST /api/ai/chat
+Body: { "message": "What is the status of my order?" }
+Returns:
+{
+  "success": true,
+  "data": {
+    "message": "AI response here",
+    "model": "llama3.1:8b"
+  },
+  "timestamp": "2026-05-26T10:00:00Z"
+}
 ```
 
 ## Key Features
 
-- **Service Discovery** — Services register with Eureka and find each other by name, no hardcoded URLs
-- **Load Balancing** — API Gateway uses client-side load balancing via `lb://` prefix
-- **Circuit Breaker** — If User Service is unavailable, Order Service returns fallback response instead of failing
-- **JWT Authentication** — Stateless authentication, all protected endpoints require Bearer token
-- **Redis Caching** — Toggleable caching layer, reduces database load and improves response time
-- **Global Exception Handler** — Unified error response format across all services, returns consistent JSON with status, message, and timestamp
-- **Monitoring** — Prometheus + Grafana dashboards for JVM metrics, CPU, memory, and HTTP request statistics
-- **API Documentation** — Swagger UI available at `http://localhost:8080/swagger-ui.html`
+- **Centralized JWT Authentication** — Gateway validates all tokens, downstream services are decoupled from auth logic
+- **Service Discovery** — Services register with Eureka, no hardcoded URLs
+- **Load Balancing** — Gateway uses `lb://` prefix for client-side load balancing
+- **Circuit Breaker** — Resilience4j fallback when User Service is unavailable
+- **Redis Caching** — Reduces database load, toggleable via Spring Profile
+- **Global Exception Handler** — Unified JSON error response across all services
+- **AI Chat Assistant** — Local LLM via Ollama, responds in user's language
+- **Monitoring** — Prometheus + Grafana for JVM, CPU, memory, HTTP metrics
+- **API Documentation** — Swagger UI at `http://localhost:8080/swagger-ui.html`
 
 ## Performance Benchmark
 
@@ -201,4 +251,4 @@ Tested with [golang-http-benchmark](https://github.com/hllld/golang-http-benchma
 ## Related Projects
 
 - [golang-http-benchmark](https://github.com/hllld/golang-http-benchmark) — HTTP benchmark tool used to test this service
-- [kotlin-android-client](https://github.com/hllld/kotlin-android-client) — Android client for this API (coming soon)
+- [kotlin-android-client](https://github.com/hllld/kotlin-android-client) — Android client for this API
