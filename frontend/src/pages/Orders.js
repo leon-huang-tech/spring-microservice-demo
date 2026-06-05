@@ -18,9 +18,12 @@ function Orders() {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => setOrders(res.data))
-            .catch(() => {
-                setError('Failed to fetch orders. Please log in again.');
-                navigate('/login');
+            .catch((err) => {
+                //setError('Failed to fetch orders. Please log in again.');
+                // localStorage.removeItem('token');
+                // navigate('/login');
+                console.error('Orders error:', err);
+                setError('Failed to fetch orders: ' + err.message);
             });
     }, [navigate]);
 
@@ -40,6 +43,17 @@ function Orders() {
                 <button style={styles.navButton}
                     onClick={() => navigate('/users')}>
                     View Users
+                </button>
+                <button style={styles.navButton}
+                    onClick={() => navigate('/chat')}>
+                    AI Chat
+                </button>
+                <button style={{ ...styles.navButton, backgroundColor: '#ff4d4f', marginLeft: 8 }}
+                    onClick={() => {
+                        localStorage.removeItem('token');
+                        navigate('/login');
+                    }}>
+                    Logout
                 </button>
             </div>
 

@@ -18,9 +18,9 @@ function Users() {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => setUsers(res.data))
-            .catch(() => {
-                setError('Failed to fetch users, please login again');
-                navigate('/login');
+            .catch((err) => {
+                console.error('Users error:', err);
+                setError('Failed to fetch users. Please try again.');
             });
     }, [navigate]);
 
@@ -31,6 +31,17 @@ function Users() {
                 <button style={styles.navButton}
                     onClick={() => navigate('/orders')}>
                     View Orders
+                </button>
+                <button style={styles.navButton}
+                    onClick={() => navigate('/chat')}>
+                    AI Chat
+                </button>
+                <button style={{ ...styles.navButton, backgroundColor: '#ff4d4f', marginLeft: 8 }}
+                    onClick={() => {
+                        localStorage.removeItem('token');
+                        navigate('/login');
+                    }}>
+                    Logout
                 </button>
             </div>
 
