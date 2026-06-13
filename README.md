@@ -229,7 +229,7 @@ Returns:
 
 ## Performance Benchmark
 
-Tested with [golang-http-benchmark](https://github.com/hllld/golang-http-benchmark):
+Tested with [golang-http-benchmark](https://github.com/leon-huang-tech/golang-http-benchmark):
 
 | Scenario | TPS | Avg Response | Max Response |
 |----------|-----|-------------|-------------|
@@ -257,5 +257,5 @@ Tested with [golang-http-benchmark](https://github.com/hllld/golang-http-benchma
 
 ## Related Projects
 
-- [golang-http-benchmark](https://github.com/hllld/golang-http-benchmark) — HTTP benchmark tool used to test this service
-- [kotlin-android-client](https://github.com/hllld/kotlin-android-client) — Android client for this API
+- [golang-http-benchmark](https://github.com/leon-huang-tech/golang-http-benchmark) — HTTP benchmark tool used to test this service
+- [kotlin-android-client](https://github.com/leon-huang-tech/kotlin-android-client) — Android client for this API
