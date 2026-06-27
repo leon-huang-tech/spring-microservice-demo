@@ -69,7 +69,6 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **Prometheus** — Metrics collection
 - **Grafana** — Metrics visualization and dashboards
 - **Spring Actuator** — Application metrics exposure
-- **JMeter** — API testing including auth flow, pagination, and AI chat testing
 
 ### DevOps
 - **Docker + Docker Compose** — Containerization
@@ -85,6 +84,22 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 | AI Service | 8083 | AI chat assistant powered by Ollama |
 | Prometheus | 9090 | Metrics collection |
 | Grafana | 3000 | Metrics dashboard |
+| React Frontend | 3001 | Dev server (port changed from 3000 to avoid conflict with Grafana) |
+
+* React frontend runs on port 3001 to avoid conflict with Grafana (port 3000)
+
+## Notes
+
+### React Frontend Port
+React dev server runs on port **3001** (not the default 3000) to avoid conflict with Grafana.
+Configured in `package.json`:
+```json
+"start": "PORT=3001 react-scripts start"
+```
+
+### Spring AI Streaming Bug (Spring AI 1.0.0 + Ollama)
+Function Calling with streaming mode triggers an `evalDuration` NPE in Spring AI 1.0.0.
+**Workaround:** AI service uses non-streaming mode internally; the client simulates streaming by reading SSE chunks on arrival.
 
 ## Authentication Architecture
 
