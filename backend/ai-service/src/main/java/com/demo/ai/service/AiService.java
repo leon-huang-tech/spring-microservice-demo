@@ -1,6 +1,10 @@
 package com.demo.ai.service;
 
-import com.demo.ai.dto.ChatResponse;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -8,32 +12,29 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.demo.ai.dto.ChatResponse;
+
+import reactor.core.publisher.Flux;
 
 @Service
 public class AiService {
 
+    private static final Logger log = LoggerFactory.getLogger(AiService.class);
+
     private final ChatClient chatClient;
     private final Map<String, ChatMemory> memories = new ConcurrentHashMap<>();
-    private final DataService dataService;
 
     @Value("${spring.ai.ollama.chat.options.model}")
     private String model;
 
     public AiService(ChatClient.Builder builder, DataService dataService) {
-        this.dataService = dataService;
         this.chatClient = builder
-                .defaultSystem("""
-                    You are a helpful assistant for an e-commerce platform.
-                    You have access to real data through tools.
-                    When users ask about orders or users, always use the tools 
-                    to get real data before answering.
-                    Always respond in the same language as the user's message.
-                    Be concise, professional, and friendly.
-                    """)
+        		.defaultSystem("""
+        			    You are a helpful assistant for an e-commerce platform.
+        				You can query order and user data when the user asks about them.
+        				Respond in the same language as the user. Be concise and friendly.
+        			    """)
                 .defaultTools(dataService)
                 .build();
     }
@@ -47,15 +48,27 @@ public class AiService {
     }
 
     public ChatResponse chat(String message, String sessionId) {
-        ChatMemory memory = getOrCreateMemory(sessionId);
-        String response = chatClient.prompt()
-                .user(message)
-                .advisors(MessageChatMemoryAdvisor.builder(memory)
-                        .conversationId(sessionId)
-                        .build())
-                .call()
-                .content();
-        return new ChatResponse(response, model);
+    	ChatMemory memory = getOrCreateMemory(sessionId);
+        try {
+            String response = chatClient.prompt()
+                    .user(message)
+                    .advisors(MessageChatMemoryAdvisor.builder(memory)
+                            .conversationId(sessionId)
+                            .build())
+                    .call()
+                    .content();
+            return new ChatResponse(response, model);
+        } catch (Exception e) {
+            log.error("AI service error: {}", e.getMessage(), e);
+            String userMessage;
+            if (e.getMessage() != null && e.getMessage().contains("Connection refused")) {
+                userMessage = "AI service is currently unavailable. Please try again later.";
+            } else {
+                userMessage = "Error: " + e.getMessage();
+            }
+            return new ChatResponse(userMessage, model);
+        }
+
     }
 
 	/*
@@ -66,6 +79,7 @@ public class AiService {
 	 */
     public Flux<String> chatStream(String message, String sessionId) {
         ChatMemory memory = getOrCreateMemory(sessionId);
+//        StringBuilder fullResponseBuilder = new StringBuilder();
         
         // Use non-streaming for tool calls, streaming for simple responses
         try {
@@ -74,14 +88,37 @@ public class AiService {
                     .advisors(MessageChatMemoryAdvisor.builder(memory)
                             .conversationId(sessionId)
                             .build())
-                    .call()
+                    .call() 
+                    // .stream() // enable SSE / stream
                     .content();
+//                    .doOnNext(chunk -> {
+//                        log.debug("Real-time network chunk: '{}'", chunk);
+//                        fullResponseBuilder.append(chunk);
+//                    })
+//                    .doOnComplete(() -> {
+//                        String finalFullContent = fullResponseBuilder.toString();
+//                        log.info("Finished! The final full content is: \n{}", finalFullContent);
+//                    });
             
             // Simulate streaming by splitting response
-            return Flux.fromArray(response.split("(?<=\\s)"))
-                    .map(word -> word);
+//            return Flux.fromArray(response.split("(?<=\\s)"))
+//                    .map(word -> word);
+            Flux<String> word = Flux.fromArray(response.split(""))
+                    .map(character -> {
+                    	log.debug("chunk: '{}'", character);
+                        return character;
+                    });
+            return word; 
         } catch (Exception e) {
-            return Flux.just("Error: " + e.getMessage());
+            log.error("AI service error: {}", e.getMessage(), e);
+            
+            String userMessage;
+            if (e.getMessage() != null && e.getMessage().contains("Connection refused")) {
+                userMessage = "AI service is currently unavailable. Please try again later.";
+            } else {
+                userMessage = "Error: " + e.getMessage();
+            }
+            return Flux.just(userMessage);
         }
     }
 
