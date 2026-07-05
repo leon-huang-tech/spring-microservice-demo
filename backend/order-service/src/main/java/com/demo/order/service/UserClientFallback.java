@@ -1,9 +1,9 @@
 package com.demo.order.service;
 
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.stereotype.Component;
 
 // Resilience4j fallback - if user-service is down, return default response
 @Component

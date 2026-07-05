@@ -1,10 +1,11 @@
 package com.demo.ai.client;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import java.util.List;
-import java.util.Map;
 
 @FeignClient(name = "user-service")
 public interface UserClient {
@@ -13,5 +14,5 @@ public interface UserClient {
     List<Map<String, Object>> getAllUsers();
 
     @GetMapping("/api/users/{id}")
-    Map<String, Object> getUserById(@PathVariable("id") Long id);
+	Map<String, Object> getUserById(@PathVariable(/* "id" */) Long id);
 }

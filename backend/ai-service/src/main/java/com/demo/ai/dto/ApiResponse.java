@@ -1,7 +1,8 @@
 package com.demo.ai.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(

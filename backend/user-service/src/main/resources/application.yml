@@ -23,6 +23,7 @@ spring:
     properties:
       hibernate:
         format_sql: true	
+    open-in-view: false # Disable OSIV to prevent anti-patterns, N+1 query issues, and database connection pool exhaustion
 #  data:
 #    redis:
 #      host: localhost

@@ -1,13 +1,14 @@
 package com.demo.ai.service;
 
-import com.demo.ai.client.OrderClient;
-import com.demo.ai.client.UserClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import com.demo.ai.client.OrderClient;
+import com.demo.ai.client.UserClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class DataService {

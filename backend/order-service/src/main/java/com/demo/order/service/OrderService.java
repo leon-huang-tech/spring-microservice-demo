@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.demo.order.exception.ResourceNotFoundException;
@@ -34,7 +35,7 @@ public class OrderService {
     }
 
     @Cacheable(value = "orders", key = "#id")
-    public Order getOrderById(Long id) {
+    public Order getOrderById(@NonNull Long id) {
     	log.info(">>> Fetching order {} from DATABASE", id);
     	return orderRepository.findById(id)
 		.orElseThrow(() ->
@@ -49,13 +50,13 @@ public class OrderService {
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public Order createOrder(Order order) {
+    public Order createOrder(@NonNull Order order) {
     	
         return orderRepository.save(order);
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public void deleteOrder(Long id) {
+    public void deleteOrder(@NonNull Long id) {
         orderRepository.deleteById(id);
     }
     
@@ -65,7 +66,7 @@ public class OrderService {
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public Order updateOrder(Long id, Order updated) {
+    public Order updateOrder(@NonNull Long id, Order updated) {
         Order order = getOrderById(id);
         order.setProduct(updated.getProduct());
         order.setAmount(updated.getAmount());

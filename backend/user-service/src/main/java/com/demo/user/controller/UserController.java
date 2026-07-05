@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,7 +44,7 @@ public class UserController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
+	public ResponseEntity<User> getUserById(@PathVariable(/* "id" */) @NonNull Long id) {
 		return ResponseEntity.ok(userService.getUserById(id));
 		/*
 		 * userService.getUserById(id) .map(ResponseEntity::ok)
@@ -52,7 +53,7 @@ public class UserController {
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteUser(@PathVariable("id") Long id) {
+	public ResponseEntity<Void> deleteUser(@PathVariable(/* "id" */) @NonNull Long id) {
 		userService.deleteUser(id);
 		return ResponseEntity.noContent().build();
 	}

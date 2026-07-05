@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,13 +40,13 @@ public class OrderController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<Order> getOrderById(@PathVariable("id") Long id) {
+	public ResponseEntity<Order> getOrderById(@PathVariable(/* "id" */) @NonNull Long id) {
 //		return orderService.getOrderById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
 		return ResponseEntity.ok(orderService.getOrderById(id));
 	}
 
 	@GetMapping("/user/{userId}")
-	public ResponseEntity<Map<String, Object>> getOrdersWithUser(@PathVariable("userId") Long userId) {
+	public ResponseEntity<Map<String, Object>> getOrdersWithUser(@PathVariable(/* "userId" */) Long userId) {
 		List<Order> orders = orderService.getOrdersByUserId(userId);
 		Map<String, Object> userInfo = userClient.getUserById(userId);
 
@@ -58,12 +59,12 @@ public class OrderController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+	public ResponseEntity<Order> createOrder(@RequestBody @NonNull Order order) {
 		return ResponseEntity.ok(orderService.createOrder(order));
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteOrder(@PathVariable("id") Long id) {
+	public ResponseEntity<Void> deleteOrder(@PathVariable(/* "id" */) @NonNull Long id) {
 		orderService.deleteOrder(id);
 		return ResponseEntity.noContent().build();
 	}
@@ -81,7 +82,7 @@ public class OrderController {
 	
 	@PutMapping("/{id}")
 	public ResponseEntity<Order> updateOrder(
-	        @PathVariable("id") Long id,
+			@PathVariable(/* "id" */) @NonNull Long id,
 	        @RequestBody Order order) {
 //	    return orderService.getOrderById(id) instanceof Order existing
 //	        ? ResponseEntity.ok(orderService.updateOrder(id, order))

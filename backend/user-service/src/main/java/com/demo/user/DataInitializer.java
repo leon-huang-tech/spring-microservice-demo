@@ -1,10 +1,11 @@
 package com.demo.user;
 
-import com.demo.user.model.User;
-import com.demo.user.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import com.demo.user.model.User;
+import com.demo.user.repository.UserRepository;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
