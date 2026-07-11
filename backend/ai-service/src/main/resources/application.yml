@@ -28,4 +28,5 @@ management:
         include: health,info
 logging:
   level:
-    "[com.demo.ai]": DEBUG
+    com.demo.ai: DEBUG
+#    org.springframework.ai.chat.client.advisor: DEBUG

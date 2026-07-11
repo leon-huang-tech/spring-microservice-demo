@@ -14,9 +14,8 @@ import com.demo.ai.AiServiceApplication;
 
 import reactor.core.publisher.Flux;
 
-@SpringBootTest(classes = AiServiceApplication.class, properties = { "eureka.client.enabled=false", // disable Eureka
-                                                                                                    // client.
-    "spring.cloud.discovery.enabled=false" // disable discovery services.
+@SpringBootTest(classes = AiServiceApplication.class, properties = {"eureka.client.enabled=false", // disable Eureka
+ "spring.cloud.discovery.enabled=false" // disable discovery services.
 })
 
 public class TestOllamaChatModelAiService {
@@ -63,9 +62,9 @@ public class TestOllamaChatModelAiService {
      * answer more creatively. (Default: 0.8)
      */
     OllamaOptions options = OllamaOptions.builder()
-        // .model()
-        // .temperature(1.9d)
-        .build();
+     // .model()
+     // .temperature(1.9d)
+     .build();
     Prompt prompt = new Prompt("this is an options test", options);
     ChatResponse res = chatModel.call(prompt);
     AssistantMessage assistantMessage = res.getResult().getOutput();
@@ -84,7 +83,7 @@ public class TestOllamaChatModelAiService {
     OllamaOptions options = OllamaOptions.builder().build();
     UserMessage userMessage = UserMessage.builder().text("this is an options test2")
 //        .media(null) // Need Multimodality support
-        .build();
+     .build();
     Prompt prompt = new Prompt(userMessage, options);
     ChatResponse res = chatModel.call(prompt);
     AssistantMessage assistantMessage = res.getResult().getOutput();
