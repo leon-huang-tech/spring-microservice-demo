@@ -14,5 +14,5 @@ public interface UserClient {
     List<Map<String, Object>> getAllUsers();
 
     @GetMapping("/api/users/{id}")
-	Map<String, Object> getUserById(@PathVariable(/* "id" */) Long id);
+	Map<String, Object> getUserById(@PathVariable("id") Long id);
 }

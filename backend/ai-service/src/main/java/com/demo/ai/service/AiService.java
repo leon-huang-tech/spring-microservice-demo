@@ -1,6 +1,7 @@
 package com.demo.ai.service;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -33,9 +34,9 @@ public class AiService {
         this.chatClient = builder
         		.defaultSystem("""
         			    You are a helpful assistant for an e-commerce platform.
-        				You can query order and user data when the user asks about them.
+        			You can query order and user data when the user asks about them.
         				Respond in the same language as the user. Be concise and friendly.
-        			    """)
+        			""")
                 .defaultTools(dataService)
                 .build();
     }
@@ -82,12 +83,11 @@ public class AiService {
                             .build())
                     .call() 
                     .content();
-            Flux<String> word = Flux.fromArray(response.split(""))
+            return Flux.fromArray(Objects.requireNonNull(response).split(""))
                     .map(character -> {
                     	log.debug("chunk: '{}'", character);
                         return character;
                     });
-            return word; 
         } catch (Exception e) {
             log.error("AI service error: {}", e.getMessage(), e);
             

@@ -24,7 +24,7 @@ public class BaseAiService {
       this.modelRegistry = modelRegistry;
   }
   
-  public Flux<String> streamChatMorePlatforms(String message, ChatRequest options) {
+  public Flux<String> streamChatMorePlatforms(ChatRequest options) {
     String platform = options.platform();
     ChatModel chatModel = modelRegistry.getModel(platform);
     
@@ -40,7 +40,7 @@ public class BaseAiService {
         .build();
 
     return dynamicClient.prompt()
-        .user(message)
+        .user(options.message())
         .stream()
         .content()
         .doOnNext(token -> log.debug("Stream token: {}", token));

@@ -14,8 +14,8 @@ public interface OrderClient {
     List<Map<String, Object>> getAllOrders();
 
     @GetMapping("/api/orders/{id}")
-	Map<String, Object> getOrderById(@PathVariable(/* "id" */) Long id);
+	Map<String, Object> getOrderById(@PathVariable("id") Long id);
 
     @GetMapping("/api/orders/user/{userId}")
-	Map<String, Object> getOrdersByUserId(@PathVariable(/* "userId" */) Long userId);
+	Map<String, Object> getOrdersByUserId(@PathVariable("userId") Long userId);
 }

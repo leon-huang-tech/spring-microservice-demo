@@ -11,7 +11,6 @@ public record ChatRequest(
         @NotBlank(message = "Message cannot be blank")
         @Size(max = 1000, message = "Message cannot exceed 1000 characters")
         String message,
-        @NotBlank(message = "Session ID cannot be blank")
         String sessionId,
         //
         String platform,
