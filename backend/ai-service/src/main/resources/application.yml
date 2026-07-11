@@ -10,7 +10,9 @@ spring:
       chat:
         options:
           model: llama3.1:latest # llama3.1:8b # llama3.2:3b,
-
+          temperature: 0.3 # lower temperature for more deterministic responses, higher for more creative responses. range: 0.0 - 1.0
+          num-predict: 2048 # increase for longer responses, decrease for faster responses
+          
 eureka:
   client:
     service-url:

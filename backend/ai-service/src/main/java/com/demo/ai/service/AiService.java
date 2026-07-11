@@ -13,6 +13,7 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.demo.ai.config.AiConstants;
 import com.demo.ai.dto.ChatResponse;
 
 import reactor.core.publisher.Flux;
@@ -43,7 +44,7 @@ public class AiService {
         return memories.computeIfAbsent(sessionId, k ->
                 MessageWindowChatMemory.builder()
                         .chatMemoryRepository(new InMemoryChatMemoryRepository())
-                        .maxMessages(10)
+                        .maxMessages(AiConstants.MAX_MEMORY_MESSAGES)
                         .build());
     }
 
@@ -71,17 +72,8 @@ public class AiService {
 
     }
 
-	/*
-	 * public Flux<String> chatStream(String message, String sessionId) { ChatMemory
-	 * memory = getOrCreateMemory(sessionId); return chatClient.prompt()
-	 * .user(message) .advisors(MessageChatMemoryAdvisor.builder(memory)
-	 * .conversationId(sessionId) .build()) .stream() .content(); }
-	 */
     public Flux<String> chatStream(String message, String sessionId) {
         ChatMemory memory = getOrCreateMemory(sessionId);
-//        StringBuilder fullResponseBuilder = new StringBuilder();
-        
-        // Use non-streaming for tool calls, streaming for simple responses
         try {
             String response = chatClient.prompt()
                     .user(message)
@@ -89,20 +81,7 @@ public class AiService {
                             .conversationId(sessionId)
                             .build())
                     .call() 
-                    // .stream() // enable SSE / stream
                     .content();
-//                    .doOnNext(chunk -> {
-//                        log.debug("Real-time network chunk: '{}'", chunk);
-//                        fullResponseBuilder.append(chunk);
-//                    })
-//                    .doOnComplete(() -> {
-//                        String finalFullContent = fullResponseBuilder.toString();
-//                        log.info("Finished! The final full content is: \n{}", finalFullContent);
-//                    });
-            
-            // Simulate streaming by splitting response
-//            return Flux.fromArray(response.split("(?<=\\s)"))
-//                    .map(word -> word);
             Flux<String> word = Flux.fromArray(response.split(""))
                     .map(character -> {
                     	log.debug("chunk: '{}'", character);
@@ -121,7 +100,7 @@ public class AiService {
             return Flux.just(userMessage);
         }
     }
-
+    
     public void clearMemory(String sessionId) {
         memories.remove(sessionId);
     }
