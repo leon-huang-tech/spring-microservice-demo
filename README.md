@@ -238,7 +238,7 @@ Returns:
 - **Monitoring** — Prometheus + Grafana for JVM, CPU, memory, HTTP metrics
 - **API Documentation** — Swagger UI at `http://localhost:8080/swagger-ui.html`
 - **Order Management** — Full CRUD with pagination, create/update/delete orders with form validation
-- **AI RAG (Function Calling)** — AI assistant queries real database through tools, returns accurate order and user data instead of hallucinating
+- **AI Function Calling** — AI assistant queries real database through tools, returns accurate order and user data instead of hallucinating
 - **AI Streaming** — Real-time token streaming response from local LLM
 - **AI Memory** — Conversation history maintained per session
 
