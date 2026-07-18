@@ -6,8 +6,8 @@ spring:
     name: ai-service
   datasource:
     url: jdbc:postgresql://localhost:5432/ragdb
-    username: raguser
-    password: ragpass123
+    username: ${DB_USERNAME:raguser}
+    password: ${DB_PASSWORD:ragpass123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -34,7 +34,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://admin:admin123@localhost:8761/eureka/
+      defaultZone: http://${EUREKA_USERNAME:admin}:${EUREKA_PASSWORD:admin123}@localhost:8761/eureka/
   instance:
     prefer-ip-address: false # true
     hostname: localhost
@@ -48,3 +48,6 @@ logging:
   level:
     com.demo.ai: DEBUG
 #    org.springframework.ai.chat.client.advisor: DEBUG
+    root: ERROR
+    org.springframework: ERROR
+    org.hibernate: ERROR

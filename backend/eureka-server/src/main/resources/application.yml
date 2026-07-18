@@ -16,7 +16,7 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      defaultZone: http://admin:admin123@localhost:8761/eureka/
+      defaultZone: http://${EUREKA_USERNAME:admin}:${EUREKA_PASSWORD:admin123}@localhost:8761/eureka/
   server:
     enable-self-preservation: false
 
@@ -29,3 +29,9 @@ management:
     metrics:
       export:
         enabled: true
+
+logging:
+  level:
+    root: ERROR
+    org.springframework: ERROR
+    org.hibernate: ERROR
