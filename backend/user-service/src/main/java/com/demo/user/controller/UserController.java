@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.demo.user.model.LoginRequest;
+import com.demo.user.dao.LoginRequest;
 import com.demo.user.model.User;
 import com.demo.user.service.UserService;
 
