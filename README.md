@@ -27,9 +27,9 @@ API Gateway (port 8080)
       |       - Calls User Service via Feign
       |
       +---> AI Service (port 8083)
-              - AI chat assistant
-              - Ollama integration (local LLM)
-              - Spring AI
+              - AI chat assistant (streaming + memory)
+              - RAG with pgvector + Ollama embeddings
+              - Function Calling (queries live order/user data)
 
 Service Registry: Eureka Server (port 8761)
 Monitoring: Prometheus (port 9090) + Grafana (port 3000)
@@ -50,6 +50,7 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **Resilience4j** — Circuit breaker pattern
 - **Spring Security + JWT** — Authentication at Gateway level; token generation in user-service
 - **Spring AI + Ollama** — Local LLM integration for AI chat
+- **PostgreSQL + pgvector** — Vector database for RAG (Retrieval-Augmented Generation)
 - **Springdoc OpenAPI** — Swagger API documentation
 - **Spring @RestControllerAdvice** — Centralized exception handling
 
@@ -81,7 +82,7 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 | API Gateway | 8080 | Single entry point, JWT auth, load balancing |
 | User Service | 8081 | User management, JWT token generation |
 | Order Service | 8082 | Order management, cross-service calls |
-| AI Service | 8083 | AI chat assistant powered by Ollama |
+| AI Service | 8083 | AI chat with RAG, streaming, memory, powered by Ollama + pgvector |
 | Prometheus | 9090 | Metrics collection |
 | Grafana | 3000 | Metrics dashboard |
 | React Frontend | 3001 | Dev server (port changed from 3000 to avoid conflict with Grafana) |
@@ -119,10 +120,14 @@ This avoids redundant token verification across services.
 ## Getting Started
 
 ### Prerequisites
+
 - Java 17
 - Maven
 - Redis
-- Ollama with a model pulled (e.g. `ollama pull llama3.2:3b`)
+- PostgreSQL 16 with pgvector extension
+- Ollama with models pulled:
+  - `ollama pull llama3.2:3b` (chat)
+  - `ollama pull nomic-embed-text` (embeddings)
 
 ### Option 1: Run with Docker
 
@@ -167,6 +172,50 @@ sudo systemctl start grafana-server
 ### JMeter Testing
 Import `jmeter/api-test.jmx` into JMeter to run API tests.
 The test plan includes login and AI chat requests with token correlation.
+
+## RAG (Retrieval-Augmented Generation)
+
+The AI service supports RAG using PostgreSQL + pgvector as the vector 
+store and Ollama's `nomic-embed-text` model for embeddings.
+
+### How it works
+
+1. Documents are added to a knowledge base and converted to vector 
+   embeddings via Ollama
+2. Embeddings are stored in pgvector alongside the original text
+3. User questions are converted to vectors and compared against 
+   stored documents using similarity search
+4. The top-3 most relevant chunks are injected into the LLM prompt 
+   as context
+5. The AI answers based only on the retrieved context — if the 
+   answer isn't in the documents, it says so instead of guessing
+
+### Data consistency
+
+The vector store (pgvector) and the metadata table are two separate 
+storage systems. Write operations are wrapped in a Spring transaction; 
+if the metadata save fails after the vector write succeeds, a 
+compensating action manually removes the orphaned vector entry to 
+keep both stores consistent.
+
+### Knowledge Base API
+
+POST   /api/ai/rag/documents                  # Add a document
+GET    /api/ai/rag/documents?page=0&size=10   # List documents (paginated)
+DELETE /api/ai/rag/documents/{id}              # Delete a document
+POST   /api/ai/rag/chat                        # Ask a question using RAG
+
+### Example
+
+```bash
+curl -X POST http://localhost:8083/api/ai/rag/documents \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Orders can have status PENDING, PROCESSING, or COMPLETED."}'
+
+curl -X POST http://localhost:8083/api/ai/rag/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What order statuses are supported?"}'
+```
 
 ## Redis Caching
 
@@ -241,6 +290,7 @@ Returns:
 - **AI Function Calling** — AI assistant queries real database through tools, returns accurate order and user data instead of hallucinating
 - **AI Streaming** — Real-time token streaming response from local LLM
 - **AI Memory** — Conversation history maintained per session
+- **RAG with pgvector** — AI answers grounded in real documents, prevents hallucination, with transactional consistency between vector store and metadata
 
 ## Performance Benchmark
 
