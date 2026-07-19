@@ -11,7 +11,6 @@ import com.demo.ai.service.RagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -71,6 +70,8 @@ public class AiController {
     
     /**
      * curl -N "http://localhost:8083/api/ai/specifyPlatforms?message=wakaka&platform=ollama&model=llama3.1:latest&temperature=0.8"
+     * the '-N' means to Disable buffering of the output stream, so that the response is sent to the client as soon as it is available.
+     * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
      * @return specify more platforms, such as ollama, openai, etc.
      */
     @GetMapping(value = "/specifyPlatforms", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
