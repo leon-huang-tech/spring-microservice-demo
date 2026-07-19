@@ -12,7 +12,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
 	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-	@ExceptionHandler(ResourceNotFoundException.class)
+  /**
+   * Business Exception.
+   */
+  @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
             ResourceNotFoundException ex) {
     	log.error("Global exception: {}", ex.getMessage(), ex);
@@ -25,7 +28,10 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
+  /**
+   * System Exception.
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoResourceFound(
             NoResourceFoundException ex) {
     	log.error("Global exception: {}", ex.getMessage(), ex);
