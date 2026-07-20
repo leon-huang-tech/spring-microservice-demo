@@ -47,7 +47,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus,circuitbreakers
+  endpoint:
+    health:
+      # show-details: when-authorized # always
+      show-components: always
+  health:
+    diskspace:
+      enabled: false
 logging:
   level:
     com.demo.ai: DEBUG
