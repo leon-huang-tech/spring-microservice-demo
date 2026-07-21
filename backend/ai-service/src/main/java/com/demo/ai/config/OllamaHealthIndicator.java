@@ -1,8 +1,8 @@
 package com.demo.ai.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -33,13 +33,13 @@ public class OllamaHealthIndicator implements HealthIndicator {
   public Health health() {
     try {
       Map<?, ?> response = restClient.get()
-       //.uri("/api/version")
+       .uri("/api/version")
        .retrieve()
        .body(Map.class);
 
       return Health.up()
        .withDetail("url", ollamaBaseUrl)
-       //.withDetail("version", response != null ? response.get("version") : "unknown")
+       .withDetail("version", response != null ? response.get("version") : "unknown")
        .build();
     } catch (Exception e) {
       return Health.down(e)

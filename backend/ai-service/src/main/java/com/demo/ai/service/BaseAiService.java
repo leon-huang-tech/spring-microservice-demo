@@ -31,12 +31,12 @@ public class BaseAiService {
         .defaultOptions(ChatOptions.builder()
             .temperature(options.temperature())
             .model(options.model())
-            .build())
+            /*.build()*/)
         .defaultSystem(AiConstants.SYSTEM_PROMPT)
         .build();
 
     return dynamicClient.prompt()
-        .system(p -> p.param("name", "leon"))//
+        //.system(p -> p.param("name", "leon"))//
         .user(options.message())
         .stream()
         .content()

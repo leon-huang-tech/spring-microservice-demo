@@ -55,9 +55,10 @@ public class AiService {
             String response = chatClient.prompt()
                     .user(message)
                     .advisors(MessageChatMemoryAdvisor.builder(memory)
-                            .conversationId(sessionId)
-                            .build())
-                    .call()
+//                            .conversationId(sessionId)
+                     .build())
+                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
+                     .call()
                     .content();
             return new ChatResponse(response, model);
         } catch (Exception e) {
@@ -79,9 +80,10 @@ public class AiService {
             String response = chatClient.prompt()
                     .user(message)
                     .advisors(MessageChatMemoryAdvisor.builder(memory)
-                            .conversationId(sessionId)
+//                            .conversationId(sessionId)
                             .build())
-                    .call() 
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
+                    .call()
                     .content();
             return Flux.fromArray(Objects.requireNonNull(response).split(""))
                     .map(character -> {
