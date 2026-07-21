@@ -217,6 +217,12 @@ curl -X POST http://localhost:8083/api/ai/rag/chat \
   -d '{"question": "What order statuses are supported?"}'
 ```
 
+### Frontend UI
+
+A React frontend page (`/knowledge`) provides a UI for managing 
+the knowledge base — adding, listing (paginated), and deleting 
+entries.
+
 ## Redis Caching
 
 Toggleable via Spring Profile.
