@@ -25,7 +25,7 @@ spring:
           model: llama3.1:latest # llama3.1:8b # llama3.2:3b,
           temperature: 0.3 # lower temperature for more deterministic responses, higher for more creative responses. range: 0.0 - 1.0
           num-predict: 2048 # increase for longer responses, decrease for faster responses
-      embedding: # for embedding generation, you can use a different model if needed
+      embedding: # embedding generation
         options:
           model: nomic-embed-text
     vectorstore:
@@ -33,7 +33,7 @@ spring:
         index-type: hnsw # (Hierarchical Navigable Small World)
         distance-type: cosine_distance # (Cosine Similarity)
         dimensions: 768 # Must match the embedding model's output dimensions with 'nomic-embed-text' model
-        initialize-schema: true # like create table if not exists, set to false if you already have the schema created
+        initialize-schema: true # like create table if not exists
 
 eureka:
   client:
@@ -59,6 +59,6 @@ logging:
   level:
     com.demo.ai: DEBUG
 #    org.springframework.ai.chat.client.advisor: DEBUG
-    root: ERROR
-    org.springframework: ERROR
-    org.hibernate: ERROR
+   # root: ERROR
+   # org.springframework: ERROR
+   # org.hibernate: ERROR

@@ -69,7 +69,7 @@ public class AiController {
     }
     
     /**
-     * curl -N "http://localhost:8083/api/ai/specifyPlatforms?message=wakaka&platform=ollama&model=llama3.1:latest&temperature=0.8"
+     * curl -N {@code "http://localhost:8083/api/ai/specifyPlatforms?message=wakaka&platform=ollama&model=llama3.1:latest&temperature=0.8"}
      * the '-N' means to Disable buffering of the output stream, so that the response is sent to the client as soon as it is available.
      * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
      * @return specify more platforms, such as ollama, openai, etc.

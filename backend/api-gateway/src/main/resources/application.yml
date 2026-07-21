@@ -6,34 +6,36 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      routes:
-        # Route to user-service
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/api/users/**
-          filters:
-            - StripPrefix=0
+      server: # Fix for upgrade: added nodes server.webflux. Diff for webflux or webmvc
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            # Route to user-service
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - StripPrefix=0
 
-        # Route to order-service
-        - id: order-service
-          uri: lb://order-service
-          predicates:
-            - Path=/api/orders/**
-          filters:
-            - StripPrefix=0
+            # Route to order-service
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - StripPrefix=0
 
-        # Route to ai-service
-        - id: ai-service
-          uri: lb://ai-service
-          predicates:
-            - Path=/api/ai/**
-          filters:
-            - StripPrefix=0
+            # Route to ai-service
+            - id: ai-service
+              uri: lb://ai-service
+              predicates:
+                - Path=/api/ai/**
+              filters:
+                - StripPrefix=0
 eureka:
   client:
     service-url:
