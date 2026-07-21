@@ -28,14 +28,10 @@ function Users() {
         <div style={styles.container}>
             <div style={styles.header}>
                 <h2 style={styles.title}>User List</h2>
-                <button style={styles.navButton}
-                    onClick={() => navigate('/orders')}>
-                    View Orders
-                </button>
-                <button style={styles.navButton}
-                    onClick={() => navigate('/chat')}>
-                    AI Chat
-                </button>
+                <button style={styles.navButton} onClick={() => navigate('/orders')}> View Orders </button>
+                <button style={styles.navButton} onClick={() => navigate('/chat')}> AI Chat </button>
+                <button style={styles.navButton} onClick={() => navigate('/knowledge')}> Knowledge Base </button>
+
                 <button style={{ ...styles.navButton, backgroundColor: '#ff4d4f', marginLeft: 8 }}
                     onClick={() => {
                         localStorage.removeItem('token');

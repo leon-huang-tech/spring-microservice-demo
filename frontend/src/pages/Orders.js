@@ -114,16 +114,14 @@ function Orders() {
       <div style={styles.header}>
         <h2 style={styles.title}>Order List</h2>
         <div>
-          <button style={styles.navButton} onClick={() => navigate('/users')}>
-            View Users
-          </button>
-          <button style={styles.navButton} onClick={() => navigate('/chat')}>
-            AI Chat
-          </button>
+          <button style={styles.navButton} onClick={() => navigate('/users')}> View Users </button>
+          <button style={styles.navButton} onClick={() => navigate('/chat')}> AI Chat </button>
           <button style={{...styles.navButton, backgroundColor: '#52c41a'}}
             onClick={() => { resetForm(); setShowForm(true); }}>
             + New Order
           </button>
+          <button style={styles.navButton} onClick={() => navigate('/knowledge')}> Knowledge Base </button>
+
           <button style={{...styles.navButton, backgroundColor: '#ff4d4f'}}
             onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
             Logout

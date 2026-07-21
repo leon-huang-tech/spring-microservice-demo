@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function ChatScreen() {
+function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,14 +84,9 @@ function ChatScreen() {
       <div style={styles.header}>
         <h2 style={styles.title}>AI Assistant</h2>
         <div>
-          <button style={styles.navButton}
-            onClick={() => navigate('/users')}>
-            Users
-          </button>
-          <button style={{ ...styles.navButton, marginLeft: 8 }}
-            onClick={() => navigate('/orders')}>
-            Orders
-          </button>
+          <button style={styles.navButton} onClick={() => navigate('/users')}> Users </button>
+          <button style={{ ...styles.navButton, marginLeft: 8 }} onClick={() => navigate('/orders')}> Orders </button>
+          <button style={styles.navButton} onClick={() => navigate('/knowledge')}> Knowledge Base </button>
 
           <button style={{ ...styles.navButton, backgroundColor: '#ff4d4f', marginLeft: 8 }}
             onClick={() => {
@@ -217,4 +212,4 @@ const styles = {
   },
 };
 
-export default ChatScreen;
+export default Chat;
