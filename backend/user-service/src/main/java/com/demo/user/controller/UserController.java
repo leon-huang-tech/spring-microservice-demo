@@ -27,6 +27,15 @@ public class UserController {
 		this.userService = userService;
 	}
 
+	/**
+	 * curl -X POST http://localhost:8081/api/users/login \
+	 *   -H "Content-Type: application/json" \
+	 *   -d '{"email":"alice@example.com","password":"password123"}'
+	 * <br>
+	 * the '-N' means to Disable buffering of the output stream, so that the response is sent to the client as soon as it is available.
+	 * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
+	 * @return specify more platforms, such as ollama, openai, etc.
+	 */
 	@PostMapping("/login")
 	public ResponseEntity<?> login(@RequestBody LoginRequest request) {
 		return userService.login(request.getEmail(), request.getPassword())
@@ -38,11 +47,17 @@ public class UserController {
 		return ResponseEntity.ok(userService.createUser(user));
 	}
 
+	/**
+	 * curl -X GET http://localhost:8081/api/users
+	 */
 	@GetMapping
 	public ResponseEntity<List<User>> getAllUsers() {
 		return ResponseEntity.ok(userService.getAllUsers());
 	}
 
+	/**
+	 * curl -X GET http://localhost:8081/api/users/1
+	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<User> getUserById(@PathVariable(/* "id" */) @NonNull Long id) {
 		return ResponseEntity.ok(userService.getUserById(id));

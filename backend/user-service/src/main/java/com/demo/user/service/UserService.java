@@ -60,6 +60,7 @@ public class UserService {
      */
     @CacheEvict(value = "users", allEntries = true)
     public User createUser(User user) {
+        // passwordEncoder.encode automatically generates a random salt
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }

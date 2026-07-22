@@ -62,8 +62,12 @@ springdoc:
       - name: ai-service
         url: /ai-service/v3/api-docs				
 jwt:
+  # Signing Key(not the signature itself). openssl rand -base64 32
+  # Signature(HMAC-SHA256(header.payload, secretKey)) = Header + Payload + secretKey
+  # Header By {"alg": "HS256", "typ": "JWT"}
+  # Payload By .subject(email).issuedAt(...).expiration(...)
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-  expiration: 86400000
+  expiration: 86400000 # milliseconds, 60000 ms/ 1 minute,3600000 ms/ 1 hour, 86400000 ms/ 24 hours
 
 logging:
   level:

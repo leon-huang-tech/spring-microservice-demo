@@ -25,6 +25,9 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * passwordEncoder.encode automatically generates a random salt
+     */
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
