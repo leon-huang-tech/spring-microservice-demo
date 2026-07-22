@@ -1,6 +1,6 @@
 # Spring Microservice Demo
 
-A full-stack microservice application built with Java 17, Spring Boot 3, Spring Cloud, React, and Spring AI.
+A full-stack microservice application built with Java 17, Spring Boot 4, Spring Cloud 2025, React, Spring AI 2.0, and RAG with pgvector.
 
 ## Architecture
 
@@ -30,6 +30,7 @@ API Gateway (port 8080)
               - AI chat assistant (streaming + memory)
               - RAG with pgvector + Ollama embeddings
               - Function Calling (queries live order/user data)
+              - Knowledge Base management API
 
 Service Registry: Eureka Server (port 8761)
 Monitoring: Prometheus (port 9090) + Grafana (port 3000)
@@ -39,8 +40,8 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 
 ### Backend
 - **Java 17**
-- **Spring Boot 3.2**
-- **Spring Cloud 2023**
+- **Spring Boot 4.0**
+- **Spring Cloud 2025.1**
 - **Spring Cloud Gateway** — Centralized API Gateway with JWT authentication filter and load balancing
 - **Eureka** — Service discovery and registration
 - **Spring Data JPA** — Database access
@@ -49,8 +50,8 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **OpenFeign** — Declarative service-to-service REST client
 - **Resilience4j** — Circuit breaker pattern
 - **Spring Security + JWT** — Authentication at Gateway level; token generation in user-service
-- **Spring AI + Ollama** — Local LLM integration for AI chat
-- **PostgreSQL + pgvector** — Vector database for RAG (Retrieval-Augmented Generation)
+- **Spring AI 2.0 + Ollama** — Local LLM, streaming, memory, RAG, Function Calling
+- **PostgreSQL + pgvector** — Vector database for RAG
 - **Springdoc OpenAPI** — Swagger API documentation
 - **Spring @RestControllerAdvice** — Centralized exception handling
 
@@ -98,9 +99,22 @@ Configured in `package.json`:
 "start": "PORT=3001 react-scripts start"
 ```
 
-### Spring AI Streaming Bug (Spring AI 1.0.0 + Ollama)
-Function Calling with streaming mode triggers an `evalDuration` NPE in Spring AI 1.0.0.
-**Workaround:** AI service uses non-streaming mode internally; the client simulates streaming by reading SSE chunks on arrival.
+### Spring AI + Ollama: Function Calling with Streaming
+In Spring AI 1.0.0 + Ollama, combining Function Calling with streaming mode triggered 
+an `evalDuration` NPE. The workaround used non-streaming mode for tool-call responses 
+while simulating streaming on the client side via SSE chunks.
+
+This issue was resolved in Spring AI 2.0.0 (upgraded as part of the Spring Boot 4 migration).
+
+### Spring Cloud Gateway 2025.0+ Configuration Path Change
+
+Starting from Spring Cloud 2025.0, route configuration moved from 
+`spring.cloud.gateway.routes` to `spring.cloud.gateway.server.webflux.routes`, 
+to support both WebFlux and WebMVC Gateway implementations side by side.
+
+Diagnosed by searching `spring-configuration-metadata.json` inside the 
+`spring-cloud-gateway-server-webflux` jar, which lists the actual supported 
+property paths for the installed version.
 
 ## Authentication Architecture
 
@@ -281,6 +295,14 @@ Returns:
 }
 ```
 
+### Knowledge Base (JWT required)
+```
+POST   /api/ai/rag/documents                  # Add a document
+GET    /api/ai/rag/documents?page=0&size=10   # List documents (paginated)
+DELETE /api/ai/rag/documents/{id}              # Delete a document
+POST   /api/ai/rag/chat                        # Ask a question using RAG
+```
+
 ## Key Features
 
 - **Centralized JWT Authentication** — Gateway validates all tokens, downstream services are decoupled from auth logic
@@ -297,6 +319,8 @@ Returns:
 - **AI Streaming** — Real-time token streaming response from local LLM
 - **AI Memory** — Conversation history maintained per session
 - **RAG with pgvector** — AI answers grounded in real documents, prevents hallucination, with transactional consistency between vector store and metadata
+- **Knowledge Base Management** — React UI for adding, listing, and deleting knowledge entries
+- **Spring Boot 4 Migration** — Upgraded from Spring Boot 3 to 4, resolving multiple high-severity CVEs
 
 ## Performance Benchmark
 
