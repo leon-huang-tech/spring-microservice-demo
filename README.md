@@ -57,8 +57,10 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 
 ### Frontend
 - **React 18**
-- **React Router** — Client-side routing
-- **Axios** — HTTP client
+- **React Router** — Client-side routing; route-level auth guard (`ProtectedRoute`) and a shared layout shell (`Layout` + `<Outlet />`) instead of per-page navigation code
+- **TanStack Query** — Server state management: caching, pagination, mutations with automatic cache invalidation
+- **TanStack Table** — Headless table rendering for the Orders list
+- **Axios** — HTTP client via a single shared instance (`axiosClient`) that injects the JWT and redirects to `/login` on 401
 
 ### Mobile
 - **Kotlin** — Android client
@@ -96,8 +98,38 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 React dev server runs on port **3001** (not the default 3000) to avoid conflict with Grafana.
 Configured in `package.json`:
 ```json
-"start": "PORT=3001 react-scripts start"
+{
+  "scripts": {
+    "start": "PORT=3001 react-scripts start"
+  }
+}
 ```
+
+### Frontend API Base URL Configuration
+The frontend backend URL is centralized in `src/config.js` (`API_BASE_URL`), read from
+the `REACT_APP_API_URL` environment variable with `http://localhost:8080` as the local
+dev default. `axiosClient` and the AI chat streaming helper both import from this single
+source instead of hardcoding the URL separately. To point the frontend at a different
+environment, set it in a `.env` file — no code changes needed:
+```
+REACT_APP_API_URL=https://api.your-domain.com
+```
+
+### Frontend Architecture Conventions
+All paginated list pages (Users, Orders, Knowledge Base) follow the same pattern:
+`useQuery` for data fetching and caching, `useMutation` for writes with automatic
+cache invalidation, and a shared `<Pagination />` component for page controls.
+
+Common styles (colors, buttons, table, form) are centralized in `src/styles/common.js`
+instead of being duplicated per page. Navigation and the page shell are handled once by
+a shared `<Layout />` component (Navbar + `<Outlet />`), mounted at the route level in
+`App.js`; individual pages only render their own content. Auth guarding works the same
+way, via `<ProtectedRoute />` wrapping the protected routes, rather than a per-page token
+check in `useEffect`.
+
+The AI Chat page uses a dedicated `streamChat` helper (`src/api/chatStream.js`) for
+SSE streaming, since `fetch` — not axios — is needed to read the response body
+chunk by chunk.
 
 ### Spring AI + Ollama: Function Calling with Streaming
 In Spring AI 1.0.0 + Ollama, combining Function Calling with streaming mode triggered 
@@ -265,8 +297,25 @@ Returns: { "token": "eyJ..." }
 ```
 GET    /api/users
 GET    /api/users/{id}
+GET    /api/users/paged?page=0&size=10   # Get users with pagination
 POST   /api/users/register
 DELETE /api/users/{id}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/users/paged?page=0&size=10 \
+  -H "Authorization: Bearer <token>"
+```
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "content": [ { "id": 1, "name": "Alice", "email": "alice@example.com" } ],
+    "totalPages": 1
+  }
+}
 ```
 
 ### Orders (JWT required)
@@ -314,13 +363,14 @@ POST   /api/ai/rag/chat                        # Ask a question using RAG
 - **AI Chat Assistant** — Local LLM via Ollama, responds in user's language
 - **Monitoring** — Prometheus + Grafana for JVM, CPU, memory, HTTP metrics
 - **API Documentation** — Swagger UI at `http://localhost:8080/swagger-ui.html`
-- **Order Management** — Full CRUD with pagination, create/update/delete orders with form validation
+- **User & Order Management** — Full CRUD with pagination for both Users and Orders, sharing a consistent fetch/cache/mutate pattern across the frontend
 - **AI Function Calling** — AI assistant queries real database through tools, returns accurate order and user data instead of hallucinating
 - **AI Streaming** — Real-time token streaming response from local LLM
 - **AI Memory** — Conversation history maintained per session
 - **RAG with pgvector** — AI answers grounded in real documents, prevents hallucination, with transactional consistency between vector store and metadata
 - **Knowledge Base Management** — React UI for adding, listing, and deleting knowledge entries
 - **Spring Boot 4 Migration** — Upgraded from Spring Boot 3 to 4, resolving multiple high-severity CVEs
+- **Consistent Frontend Data Layer** — All list views (Users/Orders/Knowledge Base) share the same fetch-cache-mutate pattern via TanStack Query, reducing duplicated logic across pages
 
 ## Performance Benchmark
 
