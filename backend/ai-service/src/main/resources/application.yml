@@ -5,10 +5,10 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/ragdb
+    url: jdbc:postgresql://localhost:5432/ecommercedb
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME:raguser}
-    password: ${DB_PASSWORD:ragpass123}
+    username: ${DB_USERNAME:ecommerceuser}
+    password: ${DB_PASSWORD:ecommercepass123}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -17,6 +17,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    open-in-view: false # Disable OSIV to prevent anti-patterns, N+1 query issues, and database connection pool exhaustion
+
   ai:
     ollama:
       base-url: http://localhost:11434

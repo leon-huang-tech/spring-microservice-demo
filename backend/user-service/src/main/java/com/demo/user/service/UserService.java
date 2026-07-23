@@ -3,6 +3,7 @@ package com.demo.user.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.demo.user.model.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -46,7 +47,7 @@ public class UserService {
 	 * userRepository.findById(id); }
 	 */
     @Cacheable(value = "users", key = "#id")
-    public User getUserById(@NonNull Long id) {
+    public User getUserById(Long id) {
         return userRepository.findById(id)
         		.orElseThrow(() ->
         				new ResourceNotFoundException("User not found with id: " + id));
@@ -62,6 +63,7 @@ public class UserService {
     public User createUser(User user) {
         // passwordEncoder.encode automatically generates a random salt
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(Role.USER);
         return userRepository.save(user);
     }
 
@@ -79,7 +81,7 @@ public class UserService {
      * @param id
      */
     @CacheEvict(value = "users", allEntries = true)
-    public void deleteUser(@NonNull Long id) {
+    public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
 }
