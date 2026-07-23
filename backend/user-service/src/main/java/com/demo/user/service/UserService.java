@@ -1,21 +1,23 @@
 package com.demo.user.service;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.demo.user.exception.ResourceNotFoundException;
 import com.demo.user.model.Role;
+import com.demo.user.model.User;
+import com.demo.user.repository.UserRepository;
+import com.demo.user.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.lang.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.demo.user.exception.ResourceNotFoundException;
-import com.demo.user.model.User;
-import com.demo.user.repository.UserRepository;
-import com.demo.user.security.JwtService;
+import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -83,5 +85,10 @@ public class UserService {
     @CacheEvict(value = "users", allEntries = true)
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public Page<User> getUsersPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return userRepository.findAll(pageable);
     }
 }
