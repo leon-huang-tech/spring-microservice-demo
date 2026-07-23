@@ -1,282 +1,305 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
+import axiosClient from '../axiosClient';
+import Pagination from '../components/Pagination';
+import { layout, form, table, button, text, statusColor } from '../styles/common';
 
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'COMPLETED'];
-const USER_OPTIONS = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' },
-];
+const PAGE_SIZE = 5;
+
+const fetchUsersForDropdown = async () => {
+  const res = await axiosClient.get('/api/users');
+  return res.data; 
+};
+
+// ---------- API Request Functions (Decoupled from UI) ----------
+const fetchOrders = async (page) => {
+  const res = await axiosClient.get(
+    `/api/orders/paged?page=${page}&size=${PAGE_SIZE}`
+  );
+  return res.data.data; // { content, totalPages, ... }
+};
+
+const createOrder = (payload) => axiosClient.post('/api/orders', payload);
+const updateOrder = ({ id, payload }) =>
+  axiosClient.put(`/api/orders/${id}`, payload);
+const deleteOrderReq = (id) => axiosClient.delete(`/api/orders/${id}`);
 
 function Orders() {
-  const [orders, setOrders] = useState([]);
-  const [totalPages, setTotalPages] = useState(0);
+  const queryClient = useQueryClient();
+
   const [currentPage, setCurrentPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
-  const [form, setForm] = useState({
+  const [orderForm, setOrderForm] = useState({
     userId: 1,
     product: '',
     amount: '',
-    status: 'PENDING'
+    status: 'PENDING',
   });
-  const navigate = useNavigate();
-  const PAGE_SIZE = 5;
+  const [error, setError] = useState('');
 
-  const token = () => `Bearer ${localStorage.getItem('token')}`;
+  // ---------- Data Fetching & Caching (TanStack Query) ----------
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['orders', currentPage],
+    queryFn: () => fetchOrders(currentPage),
+    keepPreviousData: true, // Keep previous data on pagination to prevent UI flickering
+    staleTime: 30_000, // Cache data and prevent duplicate requests within 30 seconds
+  });
 
-  const fetchOrders = (page = 0) => {
-    setLoading(true);
-    axios.get(`http://localhost:8080/api/orders/paged?page=${page}&size=${PAGE_SIZE}`, {
-      headers: { Authorization: token() }
-    })
-    .then(res => {
-      setOrders(res.data.data.content);
-      setTotalPages(res.data.data.totalPages);
-      setCurrentPage(page);
-    })
-    .catch(err => {
-      console.error('Orders error:', err);
-      setError('Failed to fetch orders.');
-    })
-    .finally(() => setLoading(false));
-  };
+  const { data: userOptions = [] } = useQuery({
+    queryKey: ['users-dropdown'],
+    queryFn: fetchUsersForDropdown,
+    staleTime: 5 * 60_000,
+  });
 
-  useEffect(() => {
-    const t = localStorage.getItem('token');
-    if (!t) { navigate('/login'); return; }
-    fetchOrders(0);
-  }, [navigate]);
+  const orders = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 0;
+
+  // ---------- Mutation ----------
+  const invalidateOrders = () =>
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+  const createMutation = useMutation({
+    mutationFn: createOrder,
+    onSuccess: () => {
+      resetForm();
+      invalidateOrders();
+    },
+    onError: (err) => setError('Failed to save order: ' + err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateOrder,
+    onSuccess: () => {
+      resetForm();
+      invalidateOrders();
+    },
+    onError: (err) => setError('Failed to save order: ' + err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteOrderReq,
+    onSuccess: () => invalidateOrders(),
+    onError: (err) => setError('Failed to delete: ' + err.message),
+  });
 
   const resetForm = () => {
-    setForm({ userId: 1, product: '', amount: '', status: 'PENDING' });
+    setOrderForm({ userId: 1, product: '', amount: '', status: 'PENDING' });
     setEditOrder(null);
     setShowForm(false);
   };
 
   const handleSubmit = () => {
-    if (!form.product || !form.amount) {
+    if (!orderForm.product || !orderForm.amount) {
       setError('Product and amount are required.');
       return;
     }
     const payload = {
-      userId: Number(form.userId),
-      product: form.product,
-      amount: Number(form.amount),
-      status: form.status
+      userId: Number(orderForm.userId),
+      product: orderForm.product,
+      amount: Number(orderForm.amount),
+      status: orderForm.status,
     };
 
-    const request = editOrder
-      ? axios.put(`http://localhost:8080/api/orders/${editOrder.id}`,
-          payload, { headers: { Authorization: token() } })
-      : axios.post('http://localhost:8080/api/orders',
-          payload, { headers: { Authorization: token() } });
-
-    request
-      .then(() => { resetForm(); fetchOrders(currentPage); })
-      .catch(err => setError('Failed to save order: ' + err.message));
+    if (editOrder) {
+      updateMutation.mutate({ id: editOrder.id, payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const handleEdit = (order) => {
     setEditOrder(order);
-    setForm({
+    setOrderForm({
       userId: order.userId,
       product: order.product,
       amount: order.amount,
-      status: order.status
+      status: order.status,
     });
     setShowForm(true);
   };
 
   const handleDelete = (id) => {
     if (!window.confirm('Delete this order?')) return;
-    axios.delete(`http://localhost:8080/api/orders/${id}`, {
-      headers: { Authorization: token() }
-    })
-    .then(() => fetchOrders(currentPage))
-    .catch(err => setError('Failed to delete: ' + err.message));
+    deleteMutation.mutate(id);
   };
 
-  const statusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':  return '#52c41a';
-      case 'PENDING':    return '#faad14';
-      case 'PROCESSING': return '#1890ff';
-      default:           return '#999';
-    }
-  };
+  // ---------- Table Column Definitions (TanStack Table) ----------
+  const columns = useMemo(
+    () => [
+      { header: 'ID', accessorKey: 'id' },
+      { header: 'User ID', accessorKey: 'userId' },
+      { header: 'Product', accessorKey: 'product' },
+      {
+        header: 'Amount',
+        accessorKey: 'amount',
+        cell: (info) => `$${info.getValue()}`,
+      },
+      {
+        header: 'Status',
+        accessorKey: 'status',
+        cell: (info) => (
+          <span
+            style={{ ...table.badge, backgroundColor: statusColor(info.getValue()) }}
+          >
+            {info.getValue()}
+          </span>
+        ),
+      },
+      {
+        header: 'Actions',
+        id: 'actions',
+        cell: ({ row }) => (
+          <>
+            <button
+              style={{ ...button.base, ...button.primary, ...button.small }}
+              onClick={() => handleEdit(row.original)}
+            >
+              Edit
+            </button>
+            <button
+              style={{ ...button.base, ...button.danger, ...button.small }}
+              onClick={() => handleDelete(row.original.id)}
+            >
+              Delete
+            </button>
+          </>
+        ),
+      },
+    ],
+    []
+  );
+
+  const reactTable = useReactTable({
+    data: orders,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>Order List</h2>
-        <div>
-          <button style={styles.navButton} onClick={() => navigate('/users')}> View Users </button>
-          <button style={styles.navButton} onClick={() => navigate('/chat')}> AI Chat </button>
-          <button style={{...styles.navButton, backgroundColor: '#52c41a'}}
-            onClick={() => { resetForm(); setShowForm(true); }}>
-            + New Order
-          </button>
-          <button style={styles.navButton} onClick={() => navigate('/knowledge')}> Knowledge Base </button>
-
-          <button style={{...styles.navButton, backgroundColor: '#ff4d4f'}}
-            onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
-            Logout
-          </button>
-        </div>
+    <>
+      <div style={layout.header}>
+        <h2 style={layout.title}>Order List</h2>
+        <button
+          style={{ ...button.base, ...button.success }}
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
+          }}
+        >
+          + New Order
+        </button>
       </div>
 
-      {error && <p style={styles.error}>{error}</p>}
+      {(error || isError) && (
+        <p style={text.error}>{error || 'Failed to fetch orders.'}</p>
+      )}
 
       {showForm && (
-        <div style={styles.form}>
+        <div style={form.card}>
           <h3>{editOrder ? 'Edit Order' : 'New Order'}</h3>
 
-          <label style={styles.label}>User</label>
-          <select style={styles.input}
-            value={form.userId}
-            onChange={e => setForm({...form, userId: e.target.value})}>
-            {USER_OPTIONS.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
+          <label style={form.label}>User</label>
+          <select
+            style={form.input}
+            value={orderForm.userId}
+            onChange={(e) => setOrderForm({ ...orderForm, userId: e.target.value })}
+          >
+            {userOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
             ))}
           </select>
 
-          <label style={styles.label}>Product</label>
-          <input style={styles.input}
-            value={form.product}
-            onChange={e => setForm({...form, product: e.target.value})}
-            placeholder="Product name" />
+          <label style={form.label}>Product</label>
+          <input
+            style={form.input}
+            value={orderForm.product}
+            onChange={(e) => setOrderForm({ ...orderForm, product: e.target.value })}
+            placeholder="Product name"
+          />
 
-          <label style={styles.label}>Amount ($)</label>
-          <input style={styles.input}
+          <label style={form.label}>Amount ($)</label>
+          <input
+            style={form.input}
             type="number"
-            value={form.amount}
-            onChange={e => setForm({...form, amount: e.target.value})}
-            placeholder="0.00" />
+            value={orderForm.amount}
+            onChange={(e) => setOrderForm({ ...orderForm, amount: e.target.value })}
+            placeholder="0.00"
+          />
 
-          <label style={styles.label}>Status</label>
-          <select style={styles.input}
-            value={form.status}
-            onChange={e => setForm({...form, status: e.target.value})}>
-            {STATUS_OPTIONS.map(s => (
-              <option key={s} value={s}>{s}</option>
+          <label style={form.label}>Status</label>
+          <select
+            style={form.input}
+            value={orderForm.status}
+            onChange={(e) => setOrderForm({ ...orderForm, status: e.target.value })}
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
 
-          <div style={{display: 'flex', gap: 8, marginTop: 8}}>
-            <button style={{...styles.navButton, backgroundColor: '#52c41a'}}
-              onClick={handleSubmit}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button
+              style={{ ...button.base, ...button.success }}
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               {editOrder ? 'Update' : 'Create'}
             </button>
-            <button style={{...styles.navButton, backgroundColor: '#999'}}
-              onClick={resetForm}>
+            <button
+              style={{ ...button.base, backgroundColor: '#999' }}
+              onClick={resetForm}
+            >
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <p>Loading...</p>
       ) : (
         <>
-          <table style={styles.table}>
+          <table style={table.table}>
             <thead>
-              <tr>
-                <th style={styles.th}>ID</th>
-                <th style={styles.th}>User ID</th>
-                <th style={styles.th}>Product</th>
-                <th style={styles.th}>Amount</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
+              {reactTable.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th style={table.th} key={header.id}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
             <tbody>
-              {orders.map(order => (
-                <tr key={order.id}>
-                  <td style={styles.td}>{order.id}</td>
-                  <td style={styles.td}>{order.userId}</td>
-                  <td style={styles.td}>{order.product}</td>
-                  <td style={styles.td}>${order.amount}</td>
-                  <td style={styles.td}>
-                    <span style={{
-                      ...styles.badge,
-                      backgroundColor: statusColor(order.status)
-                    }}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    <button style={{...styles.actionBtn, backgroundColor: '#1890ff'}}
-                      onClick={() => handleEdit(order)}>
-                      Edit
-                    </button>
-                    <button style={{...styles.actionBtn, backgroundColor: '#ff4d4f'}}
-                      onClick={() => handleDelete(order.id)}>
-                      Delete
-                    </button>
-                  </td>
+              {reactTable.getRowModel().rows.map((row) => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td style={table.td} key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div style={styles.pagination}>
-            <button style={styles.pageBtn}
-              disabled={currentPage === 0}
-              onClick={() => fetchOrders(currentPage - 1)}>
-              Previous
-            </button>
-            <span style={{margin: '0 16px'}}>
-              Page {currentPage + 1} of {totalPages}
-            </span>
-            <button style={styles.pageBtn}
-              disabled={currentPage >= totalPages - 1}
-              onClick={() => fetchOrders(currentPage + 1)}>
-              Next
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </>
       )}
-    </div>
+    </>
   );
 }
-
-const styles = {
-  container: { padding: '24px', maxWidth: '1000px', margin: '0 auto' },
-  header: { display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 8 },
-  title: { margin: 0, color: '#333' },
-  navButton: { padding: '8px 12px', backgroundColor: '#1890ff',
-    color: 'white', border: 'none', borderRadius: '4px',
-    cursor: 'pointer', marginLeft: 8 },
-  form: { backgroundColor: 'white', padding: '20px',
-    borderRadius: '8px', marginBottom: '16px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  label: { display: 'block', marginBottom: 4,
-    fontWeight: 'bold', fontSize: 13 },
-  input: { width: '100%', padding: '8px', marginBottom: '12px',
-    borderRadius: '4px', border: '1px solid #ddd',
-    boxSizing: 'border-box' },
-  table: { width: '100%', borderCollapse: 'collapse',
-    backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    borderRadius: '8px', overflow: 'hidden' },
-  th: { padding: '12px 16px', backgroundColor: '#1890ff',
-    color: 'white', textAlign: 'left' },
-  td: { padding: '10px 16px', borderBottom: '1px solid #f0f0f0' },
-  badge: { padding: '2px 8px', borderRadius: '4px',
-    color: 'white', fontSize: '12px' },
-  actionBtn: { padding: '4px 10px', color: 'white', border: 'none',
-    borderRadius: '4px', cursor: 'pointer', marginRight: 4, fontSize: 12 },
-  pagination: { display: 'flex', justifyContent: 'center',
-    alignItems: 'center', marginTop: 16 },
-  pageBtn: { padding: '8px 16px', backgroundColor: '#1890ff',
-    color: 'white', border: 'none', borderRadius: '4px',
-    cursor: 'pointer' },
-  error: { color: 'red' },
-};
 
 export default Orders;

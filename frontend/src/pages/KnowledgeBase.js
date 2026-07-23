@@ -1,138 +1,130 @@
-import { useEffect, useState }
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axiosClient from '../axiosClient';
+import Pagination from '../components/Pagination';
+import { layout, form, table, button, text } from '../styles/common';
 
-  from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+const PAGE_SIZE = 10;
+
+// ---------- API Request Functions (Decoupled from UI) ----------
+const fetchDocuments = async (page) => {
+  const res = await axiosClient.get(
+    `/api/ai/rag/documents?page=${page}&size=${PAGE_SIZE}`
+  );
+  return res.data.data; // { content, totalPages, ... }
+};
+
+const createDocument = (content) =>
+  axiosClient.post('/api/ai/rag/documents', { content });
+
+const deleteDocumentReq = (id) =>
+  axiosClient.delete(`/api/ai/rag/documents/${id}`);
 
 function KnowledgeBase() {
-  const [documents, setDocuments] = useState([]);
-  const [totalPages, setTotalPages] = useState(0);
+  const queryClient = useQueryClient();
+
   const [currentPage, setCurrentPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [newContent, setNewContent] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
-  const PAGE_SIZE = 10;
+  const [error, setError] = useState('');
 
-  const token = () => `Bearer ${localStorage.getItem('token')}`;
+  // ---------- Data Fetching & Caching (TanStack Query) ----------
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['knowledge', currentPage],
+    queryFn: () => fetchDocuments(currentPage),
+    keepPreviousData: true,
+    staleTime: 30_000,
+  });
 
-  const fetchDocuments = (page = 0) => {
-    setLoading(true);
-    axios.get(`http://localhost:8080/api/ai/rag/documents?page=${page}&size=${PAGE_SIZE}`, {
-      headers: { Authorization: token() }
-    })
-      .then(res => {
-        setDocuments(res.data.data.content);
-        setTotalPages(res.data.data.totalPages);
-        setCurrentPage(page);
-      })
-      .catch(err => {
-        console.error('Knowledge base error:', err);
-        setError('Failed to fetch documents.');
-      })
-      .finally(() => setLoading(false));
-  };
+  const documents = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 0;
 
-  useEffect(() => {
-    const t = localStorage.getItem('token');
-    if (!t) { navigate('/login'); return; }
-    fetchDocuments(0);
-  }, [navigate]);
+  // ---------- Mutation ----------
+  const invalidateDocuments = () =>
+    queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+
+  const createMutation = useMutation({
+    mutationFn: createDocument,
+    onSuccess: () => {
+      setNewContent('');
+      setCurrentPage(0);
+      invalidateDocuments();
+    },
+    onError: (err) => setError('Failed to add document: ' + err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteDocumentReq,
+    onSuccess: () => invalidateDocuments(),
+    onError: (err) => setError('Failed to delete: ' + err.message),
+  });
 
   const handleAdd = () => {
     if (!newContent.trim()) {
       setError('Content cannot be empty.');
       return;
     }
-    setSubmitting(true);
     setError('');
-    axios.post('http://localhost:8080/api/ai/rag/documents',
-      { content: newContent },
-      { headers: { Authorization: token() } }
-    )
-      .then(() => {
-        setNewContent('');
-        fetchDocuments(0);
-      })
-      .catch(err => setError('Failed to add document: ' + err.message))
-      .finally(() => setSubmitting(false));
+    createMutation.mutate(newContent);
   };
 
   const handleDelete = (id) => {
     if (!window.confirm('Delete this knowledge entry?')) return;
-    axios.delete(`http://localhost:8080/api/ai/rag/documents/${id}`, {
-      headers: { Authorization: token() }
-    })
-      .then(() => fetchDocuments(currentPage))
-      .catch(err => setError('Failed to delete: ' + err.message));
+    deleteMutation.mutate(id);
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>Knowledge Base</h2>
-        <div>
-          <button style={styles.navButton} onClick={() => navigate('/users')}>
-            Users
-          </button>
-          <button style={styles.navButton} onClick={() => navigate('/orders')}>
-            Orders
-          </button>
-          <button style={styles.navButton} onClick={() => navigate('/chat')}>
-            AI Chat
-          </button>
-          <button style={{ ...styles.navButton, backgroundColor: '#ff4d4f' }}
-            onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
-            Logout
-          </button>
-        </div>
-      </div>
+    <>
+      <h2 style={layout.title}>Knowledge Base</h2>
 
-      {error && <p style={styles.error}>{error}</p>}
+      {(error || isError) && (
+        <p style={text.error}>{error || 'Failed to fetch documents.'}</p>
+      )}
 
-      <div style={styles.form}>
-        <label style={styles.label}>Add a new knowledge entry</label>
+      <div style={form.card}>
+        <label style={form.label}>Add a new knowledge entry</label>
         <textarea
-          style={styles.textarea}
+          style={form.textarea}
           value={newContent}
-          onChange={e => setNewContent(e.target.value)}
-          placeholder="e.g. Orders can have status PENDING, PROCESSING, or COMPLETED.\"
-        rows={3}
+          onChange={(e) => setNewContent(e.target.value)}
+          placeholder="e.g. Orders can have status PENDING, PROCESSING, or COMPLETED."
+          rows={3}
         />
         <button
-          style={{ ...styles.navButton, backgroundColor: '#52c41a', marginLeft: 0 }}
+          style={{ ...button.base, ...button.success }}
           onClick={handleAdd}
-          disabled={submitting}>
-          {submitting ? 'Adding...' : '+ Add to Knowledge Base'}
+          disabled={createMutation.isPending}
+        >
+          {createMutation.isPending ? 'Adding...' : '+ Add to Knowledge Base'}
         </button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p>Loading...</p>
       ) : (
         <>
-          <table style={styles.table}>
+          <table style={table.table}>
             <thead>
               <tr>
-                <th style={styles.th}>ID</th>
-                <th style={styles.th}>Content</th>
-                <th style={styles.th}>Created</th>
-                <th style={styles.th}>Actions</th>
+                <th style={table.th}>ID</th>
+                <th style={table.th}>Content</th>
+                <th style={table.th}>Created</th>
+                <th style={table.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {documents.map(doc => (
+              {documents.map((doc) => (
                 <tr key={doc.id}>
-                  <td style={styles.td}>{doc.id}</td>
-                  <td style={styles.td}>{doc.content}</td>
-                  <td style={styles.td}>
+                  <td style={table.td}>{doc.id}</td>
+                  <td style={table.td}>{doc.content}</td>
+                  <td style={table.td}>
                     {new Date(doc.createdAt).toLocaleString()}
                   </td>
-                  <td style={styles.td}>
+                  <td style={table.td}>
                     <button
-                      style={{ ...styles.actionBtn, backgroundColor: '#ff4d4f' }}
-                      onClick={() => handleDelete(doc.id)}>
+                      style={{ ...button.base, ...button.danger, ...button.small }}
+                      onClick={() => handleDelete(doc.id)}
+                      disabled={deleteMutation.isPending}
+                    >
                       Delete
                     </button>
                   </td>
@@ -140,7 +132,7 @@ function KnowledgeBase() {
               ))}
               {documents.length === 0 && (
                 <tr>
-                  <td style={styles.td} colSpan={4}>
+                  <td style={table.td} colSpan={4}>
                     No knowledge entries yet.
                   </td>
                 </tr>
@@ -148,77 +140,15 @@ function KnowledgeBase() {
             </tbody>
           </table>
 
-          <div style={styles.pagination}>
-            <button style={styles.pageBtn}
-              disabled={currentPage === 0}
-              onClick={() => fetchDocuments(currentPage - 1)}>
-              Previous
-            </button>
-            <span style={{ margin: '0 16px' }}>
-              Page {currentPage + 1} of {Math.max(totalPages, 1)}
-            </span>
-            <button style={styles.pageBtn}
-              disabled={currentPage >= totalPages - 1}
-              onClick={() => fetchDocuments(currentPage + 1)}>
-              Next
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </>
       )}
-    </div>
+    </>
   );
 }
-
-const styles = {
-  container: { padding: '24px', maxWidth: '1000px', margin: '0 auto' },
-  header: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 8
-  },
-  title: { margin: 0, color: '#333' },
-  navButton: {
-    padding: '8px 12px', backgroundColor: '#1890ff',
-    color: 'white', border: 'none', borderRadius: '4px',
-    cursor: 'pointer', marginLeft: 8
-  },
-  form: {
-    backgroundColor: 'white', padding: '20px',
-    borderRadius: '8px', marginBottom: '16px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
-  label: {
-    display: 'block', marginBottom: 8,
-    fontWeight: 'bold', fontSize: 13
-  },
-  textarea: {
-    width: '100%', padding: '8px', marginBottom: '12px',
-    borderRadius: '4px', border: '1px solid #ddd',
-    boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 14
-  },
-  table: {
-    width: '100%', borderCollapse: 'collapse',
-    backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    borderRadius: '8px', overflow: 'hidden'
-  },
-  th: {
-    padding: '12px 16px', backgroundColor: '#1890ff',
-    color: 'white', textAlign: 'left'
-  },
-  td: { padding: '10px 16px', borderBottom: '1px solid #f0f0f0' },
-  actionBtn: {
-    padding: '4px 10px', color: 'white', border: 'none',
-    borderRadius: '4px', cursor: 'pointer', fontSize: 12
-  },
-  pagination: {
-    display: 'flex', justifyContent: 'center',
-    alignItems: 'center', marginTop: 16
-  },
-  pageBtn: {
-    padding: '8px 16px', backgroundColor: '#1890ff',
-    color: 'white', border: 'none', borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  error: { color: 'red' },
-};
 
 export default KnowledgeBase;
