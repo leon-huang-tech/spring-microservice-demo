@@ -1,10 +1,9 @@
 package com.demo.user.repository;
 
-import java.util.Optional;
-
+import com.demo.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.demo.user.model.User;
+import java.util.Optional;
 
 //@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
