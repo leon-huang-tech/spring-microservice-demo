@@ -1,30 +1,31 @@
 package com.demo.gateway;
 
-import java.util.List;
-
-import javax.crypto.SecretKey;
-
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
+
+import javax.crypto.SecretKey;
+import java.util.List;
 
 /**
  * FOR Spring WebFlux,BUT Spring MVC
  */
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
-
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
     /**
      * Signing Key(not the signature itself). openssl rand -base64 32
      * Signature(HMAC-SHA256(header.payload, secretKey)) = Header + Payload + secretKey
@@ -54,9 +55,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
         // Gets the URI path of the current incoming HTTP request
-        String path = exchange.getRequest().getPath().toString();
+        ServerHttpRequest req = exchange.getRequest();
+        log.info("Request --> {} > {} : {}", req.getLocalAddress(), req.getURI(), req.getMethod());
 
-        if (PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
+        if (PUBLIC_PATHS.stream().anyMatch(req.getPath().toString()::startsWith)) {
             // Checks if the request path starts with any allowed public path; if so, lets it pass directly.
             return chain.filter(exchange);
         }
@@ -88,7 +90,9 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                     .build();
 
             // Forwards the modified request to the next filter in the gateway chain.
-            return chain.filter(exchange);
+            return chain.filter(exchange)
+             .then(Mono.fromRunnable(() ->
+              log.info("Response StatusCode <-- {}", exchange.getResponse().getStatusCode()) ));
         } catch (Exception e) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();

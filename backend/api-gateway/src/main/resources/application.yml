@@ -74,3 +74,4 @@ logging:
     root: ERROR
     org.springframework: ERROR
     org.hibernate: ERROR
+    com.demo.gateway.JwtAuthFilter: INFO
