@@ -1,7 +1,7 @@
 // SSE streaming request wrapper for AI Chat
 // behavior: attach token and handle 401
 
-const BASE_URL = 'http://localhost:8080';
+import { API_BASE_URL } from '../config';
 
 /**
  * Initiate streaming chat request and read AI response chunk by chunk.
@@ -48,7 +48,9 @@ export async function streamChat({ message, sessionId, onChunk }) {
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith('data:')) {
-        const chunkText = trimmed.substring(5).trimStart();
+        const chunkText = trimmed.startsWith('data: ')
+          ? trimmed.slice(6) // FOR "data: " 
+          : trimmed.slice(5); // FOR "data:" 
         if (chunkText) {
           onChunk(chunkText);
         }
