@@ -1,11 +1,9 @@
 package com.demo.ai.dto;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.demo.ai.config.AiConstants;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.lang3.StringUtils;
 
 public record ChatRequest(
         @NotBlank(message = "Message cannot be blank")
@@ -20,7 +18,7 @@ public record ChatRequest(
   public ChatRequest {
     sessionId = StringUtils.defaultIfEmpty(sessionId, AiConstants.DEFAULT_SESSION_ID);
     model = StringUtils.defaultIfEmpty(model, AiConstants.DEFAULT_MODEL);
-    platform = StringUtils.defaultIfEmpty(platform, "ollama");
+    platform = StringUtils.defaultIfEmpty(platform, AiConstants.MODEL_OLLAMA);
     if (temperature == null || Double.isNaN(temperature)) {
       temperature = AiConstants.DEFAULT_TEMPERATURE;
     }

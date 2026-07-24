@@ -1,14 +1,14 @@
 package com.demo.ai.service;
 
-import java.util.List;
-import java.util.Map;
-
+import com.demo.ai.client.OrderClient;
+import com.demo.ai.client.UserClient;
+import com.demo.ai.prompt.AiPrompts;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Service;
 
-import com.demo.ai.client.OrderClient;
-import com.demo.ai.client.UserClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class DataService {
@@ -25,7 +25,7 @@ public class DataService {
         this.objectMapper = objectMapper;
     }
 
-    @Tool(description = "Get all users from the system")
+    @Tool(description = AiPrompts.SYSTEM_TOOLS_GET_USERS)
     public String getAllUsers() {
         try {
             List<Map<String, Object>> users = userClient.getAllUsers();
@@ -35,7 +35,7 @@ public class DataService {
         }
     }
 
-    @Tool(description = "Get all orders from the system")
+    @Tool(description = AiPrompts.SYSTEM_TOOLS_GET_ORDERS)
     public String getAllOrders() {
         try {
             List<Map<String, Object>> orders = orderClient.getAllOrders();
@@ -45,7 +45,7 @@ public class DataService {
         }
     }
 
-    @Tool(description = "Get orders for a specific user by user ID")
+    @Tool(description = AiPrompts.SYSTEM_TOOLS_GET_ORDERS_BY_USER)
     public String getOrdersByUserId(Long userId) {
         try {
             Map<String, Object> result = orderClient.getOrdersByUserId(userId);
@@ -55,7 +55,7 @@ public class DataService {
         }
     }
 
-    @Tool(description = "Get a specific user by ID")
+    @Tool(description = AiPrompts.SYSTEM_TOOLS_GET_USER_BY_ID)
     public String getUserById(Long userId) {
         try {
             Map<String, Object> user = userClient.getUserById(userId);

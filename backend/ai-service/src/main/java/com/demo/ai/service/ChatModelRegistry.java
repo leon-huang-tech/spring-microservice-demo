@@ -1,13 +1,13 @@
 package com.demo.ai.service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.demo.ai.config.AiConstants;
+import jakarta.annotation.PostConstruct;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class ChatModelRegistry {
@@ -20,7 +20,7 @@ public class ChatModelRegistry {
 
   @PostConstruct
   public void init() {
-    registry.put("ollama", ollamaChatModel);
+    registry.put(AiConstants.MODEL_OLLAMA, ollamaChatModel);
   }
 
   public ChatModel getModel(String platform) {
