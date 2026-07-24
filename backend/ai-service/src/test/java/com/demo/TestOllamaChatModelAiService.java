@@ -6,7 +6,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -61,7 +61,7 @@ public class TestOllamaChatModelAiService {
      * The temperature of the model. Increasing the temperature will make the model
      * answer more creatively. (Default: 0.8)
      */
-    OllamaOptions options = OllamaOptions.builder()
+    OllamaChatOptions options = OllamaChatOptions.builder()
      // .model()
      // .temperature(1.9d)
      .build();
@@ -80,7 +80,8 @@ public class TestOllamaChatModelAiService {
    */
   @Test
   public void TestOllamaOptions2() {
-    OllamaOptions options = OllamaOptions.builder().build();
+    OllamaChatOptions options = OllamaChatOptions.builder()
+     .build();
     UserMessage userMessage = UserMessage.builder().text("this is an options test2")
 //        .media(null) // Need Multimodality support
      .build();
