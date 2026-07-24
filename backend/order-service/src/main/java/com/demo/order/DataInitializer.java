@@ -1,10 +1,10 @@
 package com.demo.order;
 
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
-
 import com.demo.order.model.Order;
 import com.demo.order.repository.OrderRepository;
+import org.jspecify.annotations.NonNull;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -16,7 +16,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) {
+    public void run(String @NonNull ... args) {
         String[] products = {"Laptop", "Mouse", "Keyboard", "Monitor",
                 "Headphones", "Webcam", "USB Hub", "SSD Drive",
                 "Graphics Card", "Motherboard", "RAM", "CPU Cooler",

@@ -1,10 +1,9 @@
 package com.demo.order.repository;
 
-import java.util.List;
-
+import com.demo.order.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.demo.order.model.Order;
+import java.util.List;
 
 //@Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {

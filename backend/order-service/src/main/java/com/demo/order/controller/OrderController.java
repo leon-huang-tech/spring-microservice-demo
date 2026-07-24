@@ -1,26 +1,17 @@
 package com.demo.order.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
-import org.springframework.lang.NonNull;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.demo.order.dto.ApiResponse;
 import com.demo.order.model.Order;
 import com.demo.order.service.OrderService;
 import com.demo.order.service.UserClient;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -82,11 +73,8 @@ public class OrderController {
 	
 	@PutMapping("/{id}")
 	public ResponseEntity<Order> updateOrder(
-			@PathVariable(/* "id" */) @NonNull Long id,
+			@PathVariable(/* "id" */) Long id,
 	        @RequestBody Order order) {
-//	    return orderService.getOrderById(id) instanceof Order existing
-//	        ? ResponseEntity.ok(orderService.updateOrder(id, order))
-//	        : ResponseEntity.notFound().build();
 		return ResponseEntity.ok(orderService.updateOrder(id, order));
 	}
 }

@@ -1,7 +1,8 @@
 package com.demo.order.service;
 
-import java.util.List;
-
+import com.demo.order.exception.ResourceNotFoundException;
+import com.demo.order.model.Order;
+import com.demo.order.repository.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -10,12 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import com.demo.order.exception.ResourceNotFoundException;
-import com.demo.order.model.Order;
-import com.demo.order.repository.OrderRepository;
+import java.util.List;
 
 @Service
 public class OrderService {
@@ -35,7 +33,7 @@ public class OrderService {
     }
 
     @Cacheable(value = "orders", key = "#id")
-    public Order getOrderById(@NonNull Long id) {
+    public Order getOrderById(Long id) {
     	log.info(">>> Fetching order {} from DATABASE", id);
     	return orderRepository.findById(id)
 		.orElseThrow(() ->
@@ -50,13 +48,13 @@ public class OrderService {
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public Order createOrder(@NonNull Order order) {
+    public Order createOrder(Order order) {
     	
         return orderRepository.save(order);
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public void deleteOrder(@NonNull Long id) {
+    public void deleteOrder(Long id) {
         orderRepository.deleteById(id);
     }
     
@@ -66,7 +64,7 @@ public class OrderService {
     }
 
     @CacheEvict(value = "orders", allEntries = true)
-    public Order updateOrder(@NonNull Long id, Order updated) {
+    public Order updateOrder(Long id, Order updated) {
         Order order = getOrderById(id);
         order.setProduct(updated.getProduct());
         order.setAmount(updated.getAmount());
