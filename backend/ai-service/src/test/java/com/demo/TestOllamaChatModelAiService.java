@@ -1,5 +1,6 @@
 package com.demo;
 
+import com.demo.ai.AiServiceApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -9,10 +10,9 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import com.demo.ai.AiServiceApplication;
-
 import reactor.core.publisher.Flux;
+
+import java.util.Objects;
 
 @SpringBootTest(classes = AiServiceApplication.class, properties = {"eureka.client.enabled=false", // disable Eureka
  "spring.cloud.discovery.enabled=false" // disable discovery services.
@@ -87,7 +87,7 @@ public class TestOllamaChatModelAiService {
      .build();
     Prompt prompt = new Prompt(userMessage, options);
     ChatResponse res = chatModel.call(prompt);
-    AssistantMessage assistantMessage = res.getResult().getOutput();
+    AssistantMessage assistantMessage = Objects.requireNonNull(res.getResult()).getOutput();
     //
     System.out.println(LogUtils.getLogPrefix2(this.getClass()));
     System.out.println(assistantMessage.getText());

@@ -1,8 +1,8 @@
 package com.demo;
 
 import com.demo.ai.AiServiceApplication;
-import com.demo.ai.config.AiConstants;
 import com.demo.ai.config.ReReadAdvisor;
+import com.demo.ai.prompt.AiPrompts;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
@@ -78,11 +78,11 @@ public class TestChatClientAiService {
 
   @Test
   public void TestPrompt() {
-    ChatClient chatClient = chatclientBuilder//.defaultSystem(AiConstants.SYSTEM_PROMPT)
+    ChatClient chatClient = chatclientBuilder//.defaultSystem(AiPrompts.SYSTEM_PROMPT)
      .build();
     Flux<String> content = chatClient.prompt()//
-     //.system(p -> p.param("name", "leon"))//
-     .system(p -> p.text(AiConstants.SYSTEM_PROMPT).param("name", "leon"))//
+     //.system(p -> p.param("name", "xxx"))//
+     .system(p -> p.text(AiPrompts.SYSTEM_PROMPT))//
      .user("what is my name?")//
      .stream()//
      .content();
