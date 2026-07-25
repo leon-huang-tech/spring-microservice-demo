@@ -1,6 +1,7 @@
 package com.demo.ai.service;
 
 import com.demo.ai.config.AiConstants;
+import com.demo.ai.dto.OrphanCheckResponse;
 import com.demo.ai.exception.ResourceNotFoundException;
 import com.demo.ai.model.KnowledgeDocument;
 import com.demo.ai.repository.KnowledgeDocumentRepository;
@@ -13,7 +14,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -90,4 +93,34 @@ public class KnowledgeService {
      .collect(Collectors.joining("\n\n"));
   }
 
+  /**
+   * Compares the pgvector table against the knowledge_documents metadata
+   * table and reports orphans in both directions.
+   * <br>
+   * ASSUMPTION: the pgvector table is named "vector_store" (Spring AI's
+   * default). If spring.ai.vectorstore.pgvector.table-name is customized,
+   * update the SQL below to match.
+   */
+  public OrphanCheckResponse findOrphanedRecords() {
+    // the pgvector table is named "vector_store" (Spring AI's default)
+    List<String> allVectorIds = jdbcTemplate.queryForList(
+     AiConstants.SQL_VECTOR, String.class);
+    List<KnowledgeDocument> allMetadata =
+     knowledgeDocumentRepository.findAll();
+
+    Set<String> metadataVectorIds = allMetadata.stream()
+     .map(KnowledgeDocument::getVectorStoreId)
+     .collect(Collectors.toSet());
+
+    List<String> vectorsWithoutMetadata = allVectorIds.stream()
+     .filter(id -> !metadataVectorIds.contains(id))
+     .collect(Collectors.toList());
+
+    Set<String> vectorIdSet = new HashSet<>(allVectorIds);
+    List<KnowledgeDocument> metadataWithoutVector = allMetadata.stream()
+     .filter(doc -> !vectorIdSet.contains(doc.getVectorStoreId()))
+     .collect(Collectors.toList());
+
+    return new OrphanCheckResponse(vectorsWithoutMetadata, metadataWithoutVector);
+  }
 }

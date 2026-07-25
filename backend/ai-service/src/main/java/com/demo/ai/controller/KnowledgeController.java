@@ -2,6 +2,7 @@ package com.demo.ai.controller;
 
 import com.demo.ai.dto.AddDocumentRequest;
 import com.demo.ai.dto.ApiResponse;
+import com.demo.ai.dto.OrphanCheckResponse;
 import com.demo.ai.model.KnowledgeDocument;
 import com.demo.ai.repository.KnowledgeDocumentRepository;
 import com.demo.ai.service.KnowledgeService;
@@ -90,5 +91,20 @@ public class KnowledgeController {
   public ResponseEntity<ApiResponse<String>> deleteDocument(@PathVariable(name = "id") Long id) {
     knowledgeService.deleteDocument(id);
     return ResponseEntity.ok(ApiResponse.success("Document deleted"));
+  }
+
+  /**
+   * URL: curl http://localhost:8080/api/ai/rag/documents/orphans
+   * <br>
+   * Description: Check for orphaned records between the vector store and
+   * the knowledge_documents metadata table (maintenance/admin endpoint).
+   *
+   * @return lists of orphaned vectors and orphaned metadata rows
+   */
+  @GetMapping("/orphans")
+  @Operation(summary = "Check for orphaned records between vector store and metadata table")
+  public ResponseEntity<ApiResponse<OrphanCheckResponse>> checkOrphans() {
+    OrphanCheckResponse result = knowledgeService.findOrphanedRecords();
+    return ResponseEntity.ok(ApiResponse.success(result));
   }
 }

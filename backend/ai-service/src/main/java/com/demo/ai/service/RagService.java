@@ -25,7 +25,13 @@ public class RagService {
   //
   @Tool(description = AiPrompts.SYSTEM_TOOLS_KNOWLEDGE_RAG)
   public String searchKnowledgeBase(String query) {
-    log.info("searchKnowledgeBase tool invoked with query: '{}'", query); // 我喜欢吃吃一中
+    log.info("searchKnowledgeBase tool invoked with query: '{}'", query);
+    // TODO: [Bug Description]
+    //Issue: Chinese characters corrupted during LLM Tool/Function Call parameter extraction.
+    //
+    //Details:
+    //1. User input "我喜欢吃鱼肉" is received correctly in AiController.chatStream (UTF-8 normal).
+    //2. When LLM triggers @Tool method `RagService.searchKnowledgeBase`, the string argument drops/corrupts to "我喜欢吃吃一中".
     String result = knowledgeService.searchKnowledgeBase(query);
     log.info("searchKnowledgeBase result: '{}'", result);
     return result;
