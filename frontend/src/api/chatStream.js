@@ -46,14 +46,16 @@ export async function streamChat({ message, sessionId, onChunk }) {
     buffer = lines.pop() || ''; // Retain the last line, which may be incomplete
  
     for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('data:')) {
-        const chunkText = trimmed.startsWith('data: ')
-          ? trimmed.slice(6) // FOR "data: " 
-          : trimmed.slice(5); // FOR "data:" 
-        if (chunkText) {
-          onChunk(chunkText);
-        }
+      if (!line.startsWith('data:')) continue;
+
+      const jsonStr = line.slice(5).trim();
+      if (!jsonStr) continue;
+
+      try {
+        const { content } = JSON.parse(jsonStr);
+        if (content) onChunk(content);
+      } catch (e) {
+        console.error('Failed to parse SSE chunk:', jsonStr, e);
       }
     }
   }
