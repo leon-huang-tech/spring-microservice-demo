@@ -43,7 +43,11 @@ public class AiPrompts {
       If a tool returns no relevant information, say so honestly instead of guessing
       or making up an answer.
       Respond in the same language as the user. Be concise and friendly.
-      """;
+      """
+   + "IMPORTANT: If a tool returns any information, you MUST use it directly to answer "
+   + "the question. Do not say you couldn't find information, or ask the user for more "
+   + "details, if the tool result already contains a relevant answer. Only say you don't "
+   + "know if the tool result is genuinely empty or explicitly says no information was found.";
   public static final String SYSTEM_PROMPT_RAG_AUGMENTED = """
       Answer the user's request using only on the context below.
       If the context does not contain the answer, say you don't know.

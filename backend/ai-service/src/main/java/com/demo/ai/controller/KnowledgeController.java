@@ -4,7 +4,7 @@ import com.demo.ai.dto.AddDocumentRequest;
 import com.demo.ai.dto.ApiResponse;
 import com.demo.ai.model.KnowledgeDocument;
 import com.demo.ai.repository.KnowledgeDocumentRepository;
-import com.demo.ai.service.RagService;
+import com.demo.ai.service.KnowledgeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,12 +21,12 @@ import java.util.List;
 @Tag(name = "Knowledge Base", description = "Manage RAG knowledge base documents")
 public class KnowledgeController {
 
-  private final RagService ragService;
+  private final KnowledgeService knowledgeService;
   private final KnowledgeDocumentRepository knowledgeDocumentRepository;
 
-  public KnowledgeController(RagService ragService,
+  public KnowledgeController(KnowledgeService knowledgeService,
                              KnowledgeDocumentRepository knowledgeDocumentRepository) {
-    this.ragService = ragService;
+    this.knowledgeService = knowledgeService;
     this.knowledgeDocumentRepository = knowledgeDocumentRepository;
   }
 
@@ -46,7 +46,7 @@ public class KnowledgeController {
   @Operation(summary = "Add a document to the knowledge base")
   public ResponseEntity<ApiResponse<String>> addDocument(
    @Valid @RequestBody AddDocumentRequest request) {
-    ragService.loadDocuments(List.of(request.content()));
+    knowledgeService.addDocuments(List.of(request.content()));
     return ResponseEntity.ok(ApiResponse.success("Document added"));
   }
 
@@ -88,7 +88,7 @@ public class KnowledgeController {
   @DeleteMapping("/{id}")
   @Operation(summary = "Delete a document from the knowledge base")
   public ResponseEntity<ApiResponse<String>> deleteDocument(@PathVariable(name = "id") Long id) {
-    ragService.deleteDocument(id);
+    knowledgeService.deleteDocument(id);
     return ResponseEntity.ok(ApiResponse.success("Document deleted"));
   }
 }

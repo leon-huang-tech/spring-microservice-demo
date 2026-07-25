@@ -1,9 +1,9 @@
 package com.demo.ai.service;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.demo.ai.config.AiConstants;
+import com.demo.ai.dto.ChatProfile;
+import com.demo.ai.dto.ChatRequest;
+import com.demo.ai.dto.ChatResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,32 +13,23 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import com.demo.ai.config.AiConstants;
-import com.demo.ai.dto.ChatResponse;
-
 import reactor.core.publisher.Flux;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AiService {
-
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
-    private final ChatClient chatClient;
+    private final ChatClientFactory chatClientFactory;
     private final Map<String, ChatMemory> memories = new ConcurrentHashMap<>();
 
-    @Value("${spring.ai.ollama.chat.options.model}")
+    @Value("${spring.ai.ollama.chat.options.model:llama3.1:latest}")
     private String model;
 
-    public AiService(ChatClient.Builder builder, DataService dataService) {
-        this.chatClient = builder
-        		.defaultSystem("""
-        			    You are a helpful assistant for an e-commerce platform.
-        			You can query order and user data when the user asks about them.
-        				Respond in the same language as the user. Be concise and friendly.
-        			""")
-                .defaultTools(dataService)
-                .build();
+    public AiService(ChatClientFactory chatClientFactory) {
+        this.chatClientFactory = chatClientFactory;
     }
 
     private ChatMemory getOrCreateMemory(String sessionId) {
@@ -49,16 +40,21 @@ public class AiService {
                         .build());
     }
 
-    public ChatResponse chat(String message, String sessionId) {
-    	ChatMemory memory = getOrCreateMemory(sessionId);
+    /*
+     * Note:
+     * call() is synchronous, so try/catch can catch exceptions directly.
+     * stream() is reactive, where exceptions occur after Flux subscription,
+     * so onErrorResume must be used instead of try/catch (try/catch cannot catch exceptions inside the async pipeline).
+     */
+    public ChatResponse chat(ChatRequest chatRequest) {
+        ChatMemory memory = getOrCreateMemory(chatRequest.sessionId());
         try {
+            ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT);
             String response = chatClient.prompt()
-                    .user(message)
-                    .advisors(MessageChatMemoryAdvisor.builder(memory)
-//                            .conversationId(sessionId)
-                     .build())
-                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
-                     .call()
+                    .user(chatRequest.message())
+                    .advisors(MessageChatMemoryAdvisor.builder(memory).build())
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatRequest.sessionId()))
+                    .call()
                     .content();
             return new ChatResponse(response, model);
         } catch (Exception e) {
@@ -71,38 +67,36 @@ public class AiService {
             }
             return new ChatResponse(userMessage, model);
         }
-
     }
 
-    public Flux<String> chatStream(String message, String sessionId) {
-        ChatMemory memory = getOrCreateMemory(sessionId);
-        try {
-            String response = chatClient.prompt()
-                    .user(message)
-                    .advisors(MessageChatMemoryAdvisor.builder(memory)
-//                            .conversationId(sessionId)
-                            .build())
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
-                    .call()
-                    .content();
-            return Flux.fromArray(Objects.requireNonNull(response).split(""))
-                    .map(character -> {
-                    	log.debug("chunk: '{}'", character);
-                        return character;
-                    });
-        } catch (Exception e) {
-            log.error("AI service error: {}", e.getMessage(), e);
-            
-            String userMessage;
-            if (e.getMessage() != null && e.getMessage().contains("Connection refused")) {
-                userMessage = "AI service is currently unavailable. Please try again later.";
-            } else {
-                userMessage = "Error: " + e.getMessage();
-            }
-            return Flux.just(userMessage);
-        }
+    /*
+     * Note:
+     * call() is synchronous, so try/catch can catch exceptions directly.
+     * stream() is reactive, where exceptions occur after Flux subscription,
+     * so onErrorResume must be used instead of try/catch (try/catch cannot catch exceptions inside the async pipeline).
+     */
+    public Flux<String> chatStream(ChatRequest chatRequest) {
+        ChatMemory memory = getOrCreateMemory(chatRequest.sessionId());
+        ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT);
+        return chatClient.prompt()
+                .user(chatRequest.message())
+                .advisors(MessageChatMemoryAdvisor.builder(memory).build())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatRequest.sessionId()))
+                .stream()
+                .content()
+                .doOnNext(token -> log.debug("chunk: '{}'", token))
+                .onErrorResume(e -> {
+                    log.error("AI service stream error: {}", e.getMessage(), e);
+                    String userMessage;
+                    if (e.getMessage() != null && e.getMessage().contains("Connection refused")) {
+                        userMessage = "AI service is currently unavailable. Please try again later.";
+                    } else {
+                        userMessage = "Error: " + e.getMessage();
+                    }
+                    return Flux.just(userMessage);
+                });
     }
-    
+
     public void clearMemory(String sessionId) {
         memories.remove(sessionId);
     }

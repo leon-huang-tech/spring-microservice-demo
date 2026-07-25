@@ -36,7 +36,10 @@ spring:
         distance-type: cosine_distance # (Cosine Similarity)
         dimensions: 768 # Must match the embedding model's output dimensions with 'nomic-embed-text' model
         initialize-schema: true # like create table if not exists
-
+    default:
+      platform: ollama
+      model: llama3.1:latest
+      temperature: 0.7
 eureka:
   client:
     service-url:
