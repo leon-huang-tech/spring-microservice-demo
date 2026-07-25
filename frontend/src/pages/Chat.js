@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { useChatContext } from '../context/ChatContext';
 import { streamChat } from '../api/chatStream';
 import { layout, colors, text } from '../styles/common';
 
 function Chat() {
-  const [messages, setMessages] = useState([]);
+  // messages and sessionId now live in ChatContext (mounted once, above
+  // the routes), so they survive navigating to another page and back.
+  const { messages, setMessages, sessionId } = useChatContext();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const sessionId = useRef('session_' + Date.now());
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ function Chat() {
     try {
       await streamChat({
         message: userMessage,
-        sessionId: sessionId.current,
+        sessionId: sessionId,
         onChunk: (chunkText) => {
           aiMessage += chunkText;
           setMessages((prev) => {
@@ -96,12 +98,16 @@ function Chat() {
   );
 }
 
-// Page-specific chat bubble layout; common styles are imported from common.js
+// Chat-specific bubble layout; shared styles come from styles/common.js.
+// Note: Layout already provides page-level padding/maxWidth/margin (see
+// layout.page in styles/common.js), so only the chat-specific layout is
+// kept here to avoid stacking conflicting styles.
 const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    // Subtract approximate Navbar and page padding height to make the chat box fill the remaining viewport
+    // Rough allowance for Navbar + page padding height, so the chat box
+    // fills the rest of the viewport.
     height: 'calc(100vh - 140px)',
   },
   chatBox: {

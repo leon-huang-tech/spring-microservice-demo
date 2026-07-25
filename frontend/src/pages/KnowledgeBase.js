@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../axiosClient';
 import Pagination from '../components/Pagination';
 import { layout, form, table, button, text } from '../styles/common';
 
 const PAGE_SIZE = 10;
 
-// ---------- API Request Functions (Decoupled from UI) ----------
+// ---------- API request functions (decoupled from UI) ----------
 const fetchDocuments = async (page) => {
   const res = await axiosClient.get(
     `/api/ai/rag/documents?page=${page}&size=${PAGE_SIZE}`
@@ -20,6 +20,14 @@ const createDocument = (content) =>
 const deleteDocumentReq = (id) =>
   axiosClient.delete(`/api/ai/rag/documents/${id}`);
 
+// Calls the RAG-only Q&A endpoint (retrieval + answer, no Function Calling).
+// Used here purely to verify that a given knowledge entry is actually
+// retrievable, independent of the main AI Chat page.
+const askKnowledgeBase = async (message) => {
+  const res = await axiosClient.post('/api/ai/rag/chat', { message });
+  return res.data.data; // plain answer string
+};
+
 function KnowledgeBase() {
   const queryClient = useQueryClient();
 
@@ -27,7 +35,12 @@ function KnowledgeBase() {
   const [newContent, setNewContent] = useState('');
   const [error, setError] = useState('');
 
-  // ---------- Data Fetching & Caching (TanStack Query) ----------
+  // Separate state for the "test the knowledge base" Q&A box below,
+  // kept independent from the "add document" form above.
+  const [testMessage, setTestMessage] = useState('');
+  const [testAnswer, setTestAnswer] = useState('');
+
+  // ---------- Data fetching + caching (TanStack Query) ----------
   const { data, isLoading, isError } = useQuery({
     queryKey: ['knowledge', currentPage],
     queryFn: () => fetchDocuments(currentPage),
@@ -38,7 +51,7 @@ function KnowledgeBase() {
   const documents = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
 
-  // ---------- Mutation ----------
+  // ---------- Write operations (Mutations) ----------
   const invalidateDocuments = () =>
     queryClient.invalidateQueries({ queryKey: ['knowledge'] });
 
@@ -58,6 +71,12 @@ function KnowledgeBase() {
     onError: (err) => setError('Failed to delete: ' + err.message),
   });
 
+  const testKnowledgeBaseMutation = useMutation({
+    mutationFn: askKnowledgeBase,
+    onSuccess: (answer) => setTestAnswer(answer),
+    onError: (err) => setTestAnswer('Error: ' + err.message),
+  });
+
   const handleAdd = () => {
     if (!newContent.trim()) {
       setError('Content cannot be empty.');
@@ -70,6 +89,12 @@ function KnowledgeBase() {
   const handleDelete = (id) => {
     if (!window.confirm('Delete this knowledge entry?')) return;
     deleteMutation.mutate(id);
+  };
+
+  const handleTestQuery = () => {
+    if (!testMessage.trim()) return;
+    setTestAnswer('');
+    testKnowledgeBaseMutation.mutate(testMessage);
   };
 
   return (
@@ -96,6 +121,36 @@ function KnowledgeBase() {
         >
           {createMutation.isPending ? 'Adding...' : '+ Add to Knowledge Base'}
         </button>
+      </div>
+
+      {/*
+        Test Knowledge Base — a standalone RAG-only Q&A box, separate from
+        the main AI Chat page. It calls /api/ai/rag/chat directly (retrieval
+        + answer, no Function Calling), so you can verify a specific entry
+        is actually retrievable without the extra variable of tool-calling
+        behavior in the main Chat page.
+      */}
+      <div style={form.card}>
+        <label style={form.label}>Test Knowledge Base</label>
+        <input
+          style={form.input}
+          value={testMessage}
+          onChange={(e) => setTestMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleTestQuery()}
+          placeholder="e.g. What does Alice like?"
+        />
+        <button
+          style={{ ...button.base, ...button.primary }}
+          onClick={handleTestQuery}
+          disabled={testKnowledgeBaseMutation.isPending}
+        >
+          {testKnowledgeBaseMutation.isPending ? 'Asking...' : 'Ask'}
+        </button>
+        {testAnswer && (
+          <p style={styles.testAnswer}>
+            <strong>Answer:</strong> {testAnswer}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
@@ -150,5 +205,16 @@ function KnowledgeBase() {
     </>
   );
 }
+
+// Page-specific style not covered by styles/common.js
+const styles = {
+  testAnswer: {
+    marginTop: 12,
+    padding: '10px 12px',
+    backgroundColor: '#f0f7ff',
+    borderRadius: '4px',
+    fontSize: 14,
+  },
+};
 
 export default KnowledgeBase;
