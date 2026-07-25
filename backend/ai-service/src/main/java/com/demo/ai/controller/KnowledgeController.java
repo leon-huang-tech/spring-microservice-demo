@@ -32,16 +32,16 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl -X POST http://localhost:8080/api/ai/rag/documents \
+   * curl -X POST 'http://localhost:8080/api/ai/rag/documents' \
    * -H "Content-Type: application/json" \
    * -d '{"content": "Your document content here"}'
+   * -v print detail status
+   * -i print short status
+   * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: Add a new document to the knowledge base.
    * Request Body: JSON object containing the document content.
    * Response: JSON object indicating success or failure.
-   *
-   * @param request
-   * @return
    */
   @PostMapping
   @Operation(summary = "Add a document to the knowledge base")
@@ -52,7 +52,9 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl 'http://localhost:8080/api/ai/rag/documents?page=0&size=10'
+   * curl 'http://localhost:8080/api/ai/rag/documents?page=0&size=10'
+   * -v print detail status
+   * -i print short status
    * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: List knowledge base documents with pagination.
@@ -61,9 +63,6 @@ public class KnowledgeController {
    * - size: The number of documents per page (default is 10).
    * Response: JSON object containing a paginated list of knowledge base documents.
    *
-   * @param page
-   * @param size
-   * @return
    */
   @GetMapping
   @Operation(summary = "List knowledge base documents with pagination")
@@ -76,15 +75,16 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl -X DELETE http://localhost:8080/api/ai/rag/documents/1
+   * curl -X DELETE 'http://localhost:8080/api/ai/rag/documents/1'
+   * -v print detail status
+   * -i print short status
+   * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: Delete a document from the knowledge base.
    * Path Variable:
    * - id: The ID of the document to delete.
    * Response: JSON object indicating success or failure.
    *
-   * @param id
-   * @return
    */
   @DeleteMapping("/{id}")
   @Operation(summary = "Delete a document from the knowledge base")
@@ -94,7 +94,10 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl http://localhost:8080/api/ai/rag/documents/orphans
+   * curl 'http://localhost:8080/api/ai/rag/documents/orphans'
+   * -v print detail status
+   * -i print short status
+   * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: Check for orphaned records between the vector store and
    * the knowledge_documents metadata table (maintenance/admin endpoint).
@@ -109,7 +112,10 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl -X DELETE http://localhost:8080/api/ai/rag/documents/orphans/vectors/{vectorId}
+   * curl -X DELETE 'http://localhost:8080/api/ai/rag/documents/orphans/vectors/{vectorId}'
+   * -v print detail status
+   * -i print short status
+   * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: Delete an orphaned vector (vector store entry with no
    * matching knowledge_documents row).
@@ -123,7 +129,10 @@ public class KnowledgeController {
   }
 
   /**
-   * URL: curl -X DELETE http://localhost:8080/api/ai/rag/documents/orphans/metadata/{id}
+   * curl -X DELETE 'http://localhost:8080/api/ai/rag/documents/orphans/metadata/{id}'
+   * -v print detail status
+   * -i print short status
+   * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
    * <br>
    * Description: Delete an orphaned metadata row (knowledge_documents row
    * whose vector no longer exists in the vector store).

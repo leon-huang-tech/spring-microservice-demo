@@ -26,9 +26,11 @@ public class UserController {
 	 * curl -X POST http://localhost:8081/api/users/login \
 	 *   -H "Content-Type: application/json" \
 	 *   -d '{"email":"alice@example.com","password":"password123"}'
-	 * <br>
-	 * the '-N' means to Disable buffering of the output stream, so that the response is sent to the client as soon as it is available.
+	 * -v print detail status
+	 * -i print short status
 	 * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
+	 * the '-N' means to Disable buffering of the output stream, so that the response is sent to the client as soon as it is available.
+	 * <br>
 	 * @return specify more platforms, such as ollama, openai, etc.
 	 */
 	@PostMapping("/login")
@@ -43,7 +45,10 @@ public class UserController {
 	}
 
 	/**
-	 * curl -X GET http://localhost:8081/api/users
+	 * curl -X GET 'http://localhost:8081/api/users'
+	 * -v print detail status
+	 * -i print short status
+	 * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
 	 */
 	@GetMapping
 	public ResponseEntity<List<User>> getAllUsers() {
@@ -57,7 +62,10 @@ public class UserController {
 	}
 
 	/**
-	 * curl -X GET http://localhost:8081/api/users/1
+	 * curl -v -X GET 'http://localhost:8081/api/users/1'
+	 * -v print detail status
+	 * -i print short status
+	 * NOTE: The url incldes '&', so it should be wrapped in single quotes to avoid shell interpretation issues.
 	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<User> getUserById(@PathVariable(/* "id" */) @NonNull Long id) {

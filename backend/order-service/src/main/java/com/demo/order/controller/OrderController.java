@@ -65,6 +65,10 @@ public class OrderController {
 		return ResponseEntity.ok("Order Service is running");
 	}
 
+	/**
+	 * curl 'http://localhost:8080/api/orders/paged?page=0&size=5' \
+	 *   -H "Authorization: Bearer <xxtoken>"
+	 */
 	@GetMapping("/paged")
 	public ResponseEntity<ApiResponse<Page<Order>>> getOrdersPaged(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "5") int size) {
