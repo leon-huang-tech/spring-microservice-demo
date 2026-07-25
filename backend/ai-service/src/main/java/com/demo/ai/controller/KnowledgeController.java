@@ -107,4 +107,32 @@ public class KnowledgeController {
     OrphanCheckResponse result = knowledgeService.findOrphanedRecords();
     return ResponseEntity.ok(ApiResponse.success(result));
   }
+
+  /**
+   * URL: curl -X DELETE http://localhost:8080/api/ai/rag/documents/orphans/vectors/{vectorId}
+   * <br>
+   * Description: Delete an orphaned vector (vector store entry with no
+   * matching knowledge_documents row).
+   */
+  @DeleteMapping("/orphans/vectors/{vectorId}")
+  @Operation(summary = "Delete an orphaned vector store entry")
+  public ResponseEntity<ApiResponse<String>> deleteOrphanedVector(
+   @PathVariable String vectorId) {
+    knowledgeService.deleteOrphanedVector(vectorId);
+    return ResponseEntity.ok(ApiResponse.success("Orphaned vector deleted"));
+  }
+
+  /**
+   * URL: curl -X DELETE http://localhost:8080/api/ai/rag/documents/orphans/metadata/{id}
+   * <br>
+   * Description: Delete an orphaned metadata row (knowledge_documents row
+   * whose vector no longer exists in the vector store).
+   */
+  @DeleteMapping("/orphans/metadata/{id}")
+  @Operation(summary = "Delete an orphaned metadata row")
+  public ResponseEntity<ApiResponse<String>> deleteOrphanedMetadata(
+   @PathVariable Long id) {
+    knowledgeService.deleteOrphanedMetadata(id);
+    return ResponseEntity.ok(ApiResponse.success("Orphaned metadata deleted"));
+  }
 }

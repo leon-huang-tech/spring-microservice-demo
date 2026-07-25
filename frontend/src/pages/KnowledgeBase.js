@@ -36,6 +36,12 @@ const fetchOrphanData = async () => {
   return res.data.data; // { vectorsWithoutMetadata, metadataWithoutVector }
 };
 
+const deleteOrphanedVectorReq = (vectorId) =>
+  axiosClient.delete(`/api/ai/rag/documents/orphans/vectors/${vectorId}`);
+
+const deleteOrphanedMetadataReq = (id) =>
+  axiosClient.delete(`/api/ai/rag/documents/orphans/metadata/${id}`);
+
 function KnowledgeBase() {
   const queryClient = useQueryClient();
 
@@ -100,6 +106,21 @@ function KnowledgeBase() {
     onError: (err) => setTestAnswer('Error: ' + err.message),
   });
 
+  const deleteOrphanedVectorMutation = useMutation({
+    mutationFn: deleteOrphanedVectorReq,
+    onSuccess: () => refetchOrphanData(),
+    onError: (err) => window.alert('Failed to delete orphaned vector: ' + err.message),
+  });
+
+  const deleteOrphanedMetadataMutation = useMutation({
+    mutationFn: deleteOrphanedMetadataReq,
+    onSuccess: () => {
+      refetchOrphanData();
+      invalidateDocuments(); // the main knowledge list may show one fewer row
+    },
+    onError: (err) => window.alert('Failed to delete orphaned metadata: ' + err.message),
+  });
+
   const handleAdd = () => {
     if (!newContent.trim()) {
       setError('Content cannot be empty.');
@@ -123,6 +144,16 @@ function KnowledgeBase() {
   const handleOpenOrphanCheck = () => {
     setIsOrphanModalOpen(true);
     refetchOrphanData();
+  };
+
+  const handleDeleteOrphanedVector = (vectorId) => {
+    if (!window.confirm('Delete this orphaned vector permanently?')) return;
+    deleteOrphanedVectorMutation.mutate(vectorId);
+  };
+
+  const handleDeleteOrphanedMetadata = (id) => {
+    if (!window.confirm('Delete this orphaned metadata row permanently?')) return;
+    deleteOrphanedMetadataMutation.mutate(id);
   };
 
   return (
@@ -261,10 +292,19 @@ function KnowledgeBase() {
               {orphanData.vectorsWithoutMetadata.length === 0 ? (
                 <p style={{ color: '#52c41a' }}>None found.</p>
               ) : (
-                <ul>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {orphanData.vectorsWithoutMetadata.map((id) => (
-                    <li key={id} style={{ fontFamily: 'monospace' }}>
-                      {id}
+                    <li key={id} style={styles.orphanRow}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 13 }}>
+                        {id}
+                      </span>
+                      <button
+                        style={{ ...button.base, ...button.danger, ...button.small }}
+                        onClick={() => handleDeleteOrphanedVector(id)}
+                        disabled={deleteOrphanedVectorMutation.isPending}
+                      >
+                        Delete
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -282,10 +322,17 @@ function KnowledgeBase() {
               {orphanData.metadataWithoutVector.length === 0 ? (
                 <p style={{ color: '#52c41a' }}>None found.</p>
               ) : (
-                <ul>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {orphanData.metadataWithoutVector.map((doc) => (
-                    <li key={doc.id}>
-                      #{doc.id} — {doc.content}
+                    <li key={doc.id} style={styles.orphanRow}>
+                      <span>#{doc.id} — {doc.content}</span>
+                      <button
+                        style={{ ...button.base, ...button.danger, ...button.small }}
+                        onClick={() => handleDeleteOrphanedMetadata(doc.id)}
+                        disabled={deleteOrphanedMetadataMutation.isPending}
+                      >
+                        Delete
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -306,6 +353,14 @@ const styles = {
     backgroundColor: '#f0f7ff',
     borderRadius: '4px',
     fontSize: 14,
+  },
+  orphanRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '6px 0',
+    borderBottom: '1px solid #f0f0f0',
+    gap: 12,
   },
 };
 

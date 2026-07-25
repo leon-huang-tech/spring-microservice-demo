@@ -123,4 +123,22 @@ public class KnowledgeService {
 
     return new OrphanCheckResponse(vectorsWithoutMetadata, metadataWithoutVector);
   }
+
+  /**
+   * Deletes an orphaned vector (exists in the vector store, but has no
+   * matching row in knowledge_documents). No metadata row to clean up —
+   * vectorStore.delete is the only operation needed.
+   */
+  public void deleteOrphanedVector(String vectorId) {
+    vectorStore.delete(List.of(vectorId));
+  }
+
+  /**
+   * Deletes an orphaned metadata row (exists in knowledge_documents, but
+   * the vector it points to no longer exists in the vector store).
+   * Only removes the metadata row — there's no vector left to delete.
+   */
+  public void deleteOrphanedMetadata(Long id) {
+    knowledgeDocumentRepository.deleteById(id);
+  }
 }
