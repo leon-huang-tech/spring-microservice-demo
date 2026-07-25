@@ -53,7 +53,7 @@ public class AiService {
     public ChatResponse chat(ChatRequest chatRequest) {
         ChatMemory memory = getOrCreateMemory(chatRequest.sessionId());
         try {
-            ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT);
+            ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT_RAG);
             String response = chatClient.prompt()
                     .user(chatRequest.message())
                     .advisors(MessageChatMemoryAdvisor.builder(memory).build())
@@ -81,7 +81,7 @@ public class AiService {
      */
     public Flux<String> chatStream(ChatRequest chatRequest) {
         ChatMemory memory = getOrCreateMemory(chatRequest.sessionId());
-        ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT);
+        ChatClient chatClient = chatClientFactory.create(chatRequest, ChatProfile.CHAT_RAG);
         return chatClient.prompt()
          .user(chatRequest.message())
          .advisors(MessageChatMemoryAdvisor.builder(memory).build())

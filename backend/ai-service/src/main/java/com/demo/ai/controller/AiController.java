@@ -46,7 +46,7 @@ public class AiController {
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Stream a message to AI assistant")
     public Flux<String> chatStream(ChatRequest chatRequest) {
-        log.info("chatRequest.message: '{}'", chatRequest.message());
+        log.debug("chatRequest.message: '{}'", chatRequest.message());
         return aiService.chatStream(chatRequest);
     }
 

@@ -82,7 +82,7 @@ public class TestChatClientAiService {
      .build();
     Flux<String> content = chatClient.prompt()//
      //.system(p -> p.param("name", "xxx"))//
-     .system(p -> p.text(AiPrompts.SYSTEM_PROMPT))//
+     .system(p -> p.text(AiPrompts.SYSTEM_PROMPT_TEST))//
      .user("what is my name?")//
      .stream()//
      .content();

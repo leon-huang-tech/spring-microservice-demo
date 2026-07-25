@@ -39,22 +39,19 @@ public class ChatClientFactory {
   public ChatClient create(ChatRequest request, ChatProfile profile) {
     ChatModel model = modelRegistry.getModel(request.platform());
     if (model == null) {
-      throw new IllegalArgumentException(
-       "Unsupported platform: " + request.platform());
+      throw new IllegalArgumentException("Unsupported platform: " + request.platform());
     }
 
     ChatClient.Builder builder = ChatClient.builder(model)
      .defaultOptions(ChatOptions.builder()
       .model(request.model())
-      .temperature(request.temperature()))
-     .defaultSystem(AiPrompts.SYSTEM_PROMPT_ECO);
+      .temperature(request.temperature()));
 
     switch (profile) {
-
-      case CHAT -> {
-        builder.defaultTools(dataService, ragService);
-      }
-      case RAG -> {
+      case CHAT_RAG -> {
+        builder
+         .defaultSystem(AiPrompts.SYSTEM_PROMPT_ECO)
+         .defaultTools(dataService, ragService);
       }
     }
     return builder.build();

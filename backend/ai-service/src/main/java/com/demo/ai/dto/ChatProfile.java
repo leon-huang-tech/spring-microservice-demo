@@ -1,6 +1,5 @@
 package com.demo.ai.dto;
 
 public enum ChatProfile {
-  CHAT,
-  RAG
+  CHAT_RAG
 }
