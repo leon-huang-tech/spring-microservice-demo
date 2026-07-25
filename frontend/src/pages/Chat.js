@@ -6,9 +6,8 @@ import { layout, colors, text } from '../styles/common';
 function Chat() {
   // messages and sessionId now live in ChatContext (mounted once, above
   // the routes), so they survive navigating to another page and back.
-  const { messages, setMessages, sessionId } = useChatContext();
+  const { messages, setMessages, loading, setLoading, sessionId } = useChatContext();
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../axiosClient';
 import Pagination from '../components/Pagination';
+import Modal from '../components/Modal';
 import { layout, form, table, button, text } from '../styles/common';
 
 const PAGE_SIZE = 10;
@@ -28,6 +29,13 @@ const askKnowledgeBase = async (message) => {
   return res.data.data; // plain answer string
 };
 
+// Maintenance query: compares the pgvector table against the
+// knowledge_documents metadata table, in both directions.
+const fetchOrphanData = async () => {
+  const res = await axiosClient.get('/api/ai/rag/documents/orphans');
+  return res.data.data; // { vectorsWithoutMetadata, metadataWithoutVector }
+};
+
 function KnowledgeBase() {
   const queryClient = useQueryClient();
 
@@ -39,6 +47,21 @@ function KnowledgeBase() {
   // kept independent from the "add document" form above.
   const [testMessage, setTestMessage] = useState('');
   const [testAnswer, setTestAnswer] = useState('');
+
+  // Orphan-data check modal. `enabled: isOrphanModalOpen` means the query
+  // only fires when the modal is actually open, and refetches each time
+  // it's reopened (so the data isn't stale from a previous check).
+  const [isOrphanModalOpen, setIsOrphanModalOpen] = useState(false);
+  const {
+    data: orphanData,
+    isLoading: isOrphanLoading,
+    isError: isOrphanError,
+    refetch: refetchOrphanData,
+  } = useQuery({
+    queryKey: ['knowledge-orphans'],
+    queryFn: fetchOrphanData,
+    enabled: isOrphanModalOpen,
+  });
 
   // ---------- Data fetching + caching (TanStack Query) ----------
   const { data, isLoading, isError } = useQuery({
@@ -97,9 +120,22 @@ function KnowledgeBase() {
     testKnowledgeBaseMutation.mutate(testMessage);
   };
 
+  const handleOpenOrphanCheck = () => {
+    setIsOrphanModalOpen(true);
+    refetchOrphanData();
+  };
+
   return (
     <>
-      <h2 style={layout.title}>Knowledge Base</h2>
+      <div style={layout.header}>
+        <h2 style={layout.title}>Knowledge Base</h2>
+        <button
+          style={{ ...button.base, backgroundColor: '#999' }}
+          onClick={handleOpenOrphanCheck}
+        >
+          Check Orphan Data
+        </button>
+      </div>
 
       {(error || isError) && (
         <p style={text.error}>{error || 'Failed to fetch documents.'}</p>
@@ -202,6 +238,62 @@ function KnowledgeBase() {
           />
         </>
       )}
+
+      <Modal
+        isOpen={isOrphanModalOpen}
+        onClose={() => setIsOrphanModalOpen(false)}
+        title="Orphan Data Check"
+      >
+        {isOrphanLoading && <p>Checking...</p>}
+        {isOrphanError && (
+          <p style={text.error}>Failed to check orphan data.</p>
+        )}
+        {orphanData && (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <strong>
+                Vectors without metadata ({orphanData.vectorsWithoutMetadata.length})
+              </strong>
+              <p style={{ fontSize: 13, color: '#666', margin: '4px 0 8px' }}>
+                Present in the vector store, but no matching row in
+                knowledge_documents.
+              </p>
+              {orphanData.vectorsWithoutMetadata.length === 0 ? (
+                <p style={{ color: '#52c41a' }}>None found.</p>
+              ) : (
+                <ul>
+                  {orphanData.vectorsWithoutMetadata.map((id) => (
+                    <li key={id} style={{ fontFamily: 'monospace' }}>
+                      {id}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <strong>
+                Metadata without vector ({orphanData.metadataWithoutVector.length})
+              </strong>
+              <p style={{ fontSize: 13, color: '#666', margin: '4px 0 8px' }}>
+                Present in knowledge_documents, but the vector no longer
+                exists in the vector store.
+              </p>
+              {orphanData.metadataWithoutVector.length === 0 ? (
+                <p style={{ color: '#52c41a' }}>None found.</p>
+              ) : (
+                <ul>
+                  {orphanData.metadataWithoutVector.map((doc) => (
+                    <li key={doc.id}>
+                      #{doc.id} — {doc.content}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+      </Modal>
     </>
   );
 }
