@@ -59,7 +59,7 @@ public class OrderService {
     }
     
     public Page<Order> getOrdersPaged(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         return orderRepository.findAll(pageable);
     }
 

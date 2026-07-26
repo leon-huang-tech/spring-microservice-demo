@@ -71,7 +71,7 @@ public class OrderController {
 	 */
 	@GetMapping("/paged")
 	public ResponseEntity<ApiResponse<Page<Order>>> getOrdersPaged(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "5") int size) {
+			@RequestParam(defaultValue = "10") int size) {
 		return ResponseEntity.ok(ApiResponse.success(orderService.getOrdersPaged(page, size)));
 	}
 	

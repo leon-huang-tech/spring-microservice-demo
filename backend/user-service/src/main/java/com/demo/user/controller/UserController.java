@@ -57,7 +57,7 @@ public class UserController {
 
 	@GetMapping("/paged")
 	public ResponseEntity<ApiResponse<Page<User>>> getUsersPaged(@RequestParam(defaultValue = "0") int page,
-                                                               @RequestParam(defaultValue = "5") int size) {
+                                                               @RequestParam(defaultValue = "10") int size) {
 		return ResponseEntity.ok(ApiResponse.success(userService.getUsersPaged(page, size)));
 	}
 
