@@ -33,13 +33,13 @@ public class RagService {
     //Details:
     //1. User input "我喜欢吃鱼肉" is received correctly in AiController.chatStream (UTF-8 normal).
     //2. When LLM triggers @Tool method `RagService.searchKnowledgeBase`, the string argument drops/corrupts to "我喜欢吃吃一中".
-    String result = knowledgeService.searchKnowledgeBase(query);
+    String result = knowledgeService.retrieveContext(query);
     log.debug("searchKnowledgeBase result: '{}'", result);
     return result;
   }
 
   public String askWithContext(ChatRequest chatRequest) {
-    String context = knowledgeService.searchKnowledgeBase(chatRequest.message());
+    String context = knowledgeService.retrieveContext(chatRequest.message());
     String promptText = AiPrompts.SYSTEM_PROMPT_RAG_AUGMENTED
      .formatted(context, chatRequest.message());
 

@@ -1,18 +1,11 @@
 package com.demo.ai.service;
 
-import com.demo.ai.config.AiConstants;
 import com.demo.ai.dto.OrphanCheckResponse;
-import com.demo.ai.exception.ResourceNotFoundException;
 import com.demo.ai.model.KnowledgeDocument;
-import com.demo.ai.repository.KnowledgeDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -23,74 +16,37 @@ import java.util.stream.Collectors;
 public class KnowledgeService {
   private static final Logger log = LoggerFactory.getLogger(KnowledgeService.class);
 
-  private final VectorStore vectorStore;
-  private final KnowledgeDocumentRepository knowledgeDocumentRepository;
-  private final JdbcTemplate jdbcTemplate;
+  private final VectorStoreService vectorStoreService;
+  private final KnowledgeDocumentService knowledgeDocumentService;
 
-  public KnowledgeService(VectorStore vectorStore,
-                          KnowledgeDocumentRepository knowledgeDocumentRepository,
-                          JdbcTemplate jdbcTemplate) {
-    this.vectorStore = vectorStore;
-    this.knowledgeDocumentRepository = knowledgeDocumentRepository;
-    this.jdbcTemplate = jdbcTemplate;
+  public KnowledgeService(VectorStoreService vectorStoreService, KnowledgeDocumentService knowledgeDocumentService) {
+    this.vectorStoreService = vectorStoreService;
+    this.knowledgeDocumentService = knowledgeDocumentService;
   }
 
   //  @Transactional
   public void addDocuments(List<String> texts) {
-    List<Document> documents = texts.stream()
-     .map(Document::new)
-     .collect(Collectors.toList());
-    List<String> docIds = documents.stream()
-     .map(Document::getId)
-     .collect(Collectors.toList());
+    List<Document> documents = texts.stream().map(Document::new).collect(Collectors.toList());
+    List<String> vectorIds = vectorStoreService.add(documents);
     // Note: if called embedding model itself (Ollama HTTP API) is failure, then the whole transaction will be rolled back and no document will be saved in the database.
     try {
-      vectorStore.add(documents);
+      knowledgeDocumentService.saveAll(texts, vectorIds);
     } catch (Exception e) {
-      // If the vector store fails to add documents, we should clean up any partial additions to avoid inconsistencies.
-      try {
-        vectorStore.delete(docIds);
-      } catch (Exception ex) {
-        log.error("Failed to clean up vectors after partial failure", ex);
-      }
-      throw new ResourceNotFoundException(
-       "Failed to add documents to vector store: " + docIds);
+      vectorStoreService.delete(vectorIds);
+      throw e;
     }
-    saveMetadataRecords(texts, documents);
   }
 
-  @Transactional
-  protected void saveMetadataRecords(List<String> texts, List<Document> documents) {
-    List<KnowledgeDocument> records = new java.util.ArrayList<>();
-    for (int i = 0; i < texts.size(); i++) {
-      records.add(new KnowledgeDocument(
-       texts.get(i), documents.get(i).getId()));
-    }
-    knowledgeDocumentRepository.saveAll(records);
-  }
-
-  @Transactional
+//  @Transactional
   public void deleteDocument(Long id) {
-    KnowledgeDocument record = knowledgeDocumentRepository.findById(id)
-     .orElseThrow(() ->
-      new ResourceNotFoundException("Document not found: " + id));
-    vectorStore.delete(List.of(record.getVectorStoreId()));
-    knowledgeDocumentRepository.deleteById(id);
+    KnowledgeDocument record = knowledgeDocumentService.findByIdOrThrow(id);
+    vectorStoreService.delete(List.of(record.getVectorStoreId()));
+    knowledgeDocumentService.deleteById(id);
   }
 
   // Used by RagService as @Tool
-  public String searchKnowledgeBase(String query) {
-    List<Document> similar = vectorStore.similaritySearch(
-     SearchRequest.builder()
-      .query(query)
-      .topK(AiConstants.MAX_MEMORY_MESSAGES)
-      .build());
-    if (similar.isEmpty()) {
-      return "No relevant information found in the knowledge base.";
-    }
-    return similar.stream()
-     .map(Document::getText)
-     .collect(Collectors.joining("\n\n"));
+  public String retrieveContext(String query) {
+    return vectorStoreService.similaritySearch(query);
   }
 
   /**
@@ -103,23 +59,17 @@ public class KnowledgeService {
    */
   public OrphanCheckResponse findOrphanedRecords() {
     // the pgvector table is named "vector_store" (Spring AI's default)
-    List<String> allVectorIds = jdbcTemplate.queryForList(
-     AiConstants.SQL_VECTOR, String.class);
-    List<KnowledgeDocument> allMetadata =
-     knowledgeDocumentRepository.findAll();
+    List<String> allVectorIds = vectorStoreService.getAllVectorIds();
+    List<KnowledgeDocument> allMetadata = knowledgeDocumentService.findAll();
 
     Set<String> metadataVectorIds = allMetadata.stream()
-     .map(KnowledgeDocument::getVectorStoreId)
-     .collect(Collectors.toSet());
-
+     .map(KnowledgeDocument::getVectorStoreId).collect(Collectors.toSet());
     List<String> vectorsWithoutMetadata = allVectorIds.stream()
-     .filter(id -> !metadataVectorIds.contains(id))
-     .collect(Collectors.toList());
+     .filter(id -> !metadataVectorIds.contains(id)).collect(Collectors.toList());
 
     Set<String> vectorIdSet = new HashSet<>(allVectorIds);
     List<KnowledgeDocument> metadataWithoutVector = allMetadata.stream()
-     .filter(doc -> !vectorIdSet.contains(doc.getVectorStoreId()))
-     .collect(Collectors.toList());
+     .filter(doc -> !vectorIdSet.contains(doc.getVectorStoreId())).collect(Collectors.toList());
 
     return new OrphanCheckResponse(vectorsWithoutMetadata, metadataWithoutVector);
   }
@@ -130,7 +80,7 @@ public class KnowledgeService {
    * vectorStore.delete is the only operation needed.
    */
   public void deleteOrphanedVector(String vectorId) {
-    vectorStore.delete(List.of(vectorId));
+    vectorStoreService.delete(List.of(vectorId));
   }
 
   /**
@@ -139,6 +89,6 @@ public class KnowledgeService {
    * Only removes the metadata row — there's no vector left to delete.
    */
   public void deleteOrphanedMetadata(Long id) {
-    knowledgeDocumentRepository.deleteById(id);
+    knowledgeDocumentService.deleteById(id);
   }
 }
