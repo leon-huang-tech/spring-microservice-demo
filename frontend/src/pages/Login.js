@@ -16,6 +16,8 @@ function Login() {
         password,
       });
       localStorage.setItem('token', response.data.token);
+      const payload = JSON.parse(atob(response.data.token.split('.')[1]));
+      localStorage.setItem('userEmail', payload.sub);
       navigate('/users');
     } catch (err) {
       setError('Login failed, email or password is incorrect.');

@@ -6,7 +6,7 @@ import Pagination from '../components/Pagination';
 import { layout, form, table, button, text, statusColor } from '../styles/common';
 
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'COMPLETED'];
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 const fetchUsersForDropdown = async () => {
   const res = await axiosClient.get('/api/users');

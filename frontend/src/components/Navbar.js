@@ -11,6 +11,7 @@ function Navbar() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    localStorage.removeItem('userEmail');
     localStorage.removeItem('token');
     navigate('/login');
   };
@@ -31,9 +32,12 @@ function Navbar() {
           </NavLink>
         ))}
       </div>
-      <button style={styles.logoutBtn} onClick={handleLogout}>
-        Logout
-      </button>
+      <div style={styles.right}>
+        <span style={styles.loginUserEmail}> &nbsp;{localStorage.getItem('userEmail')} </span>
+        <button style={styles.logoutBtn} onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
     </nav>
   );
 }
@@ -51,6 +55,11 @@ const styles = {
     gap: 8,
   },
   left: { display: 'flex', gap: 4, flexWrap: 'wrap' },
+  right: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
   link: {
     padding: '8px 14px',
     borderRadius: '4px',
@@ -72,6 +81,18 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
   },
+  loginUserEmail: {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '4px 12px',
+  fontSize: '13px',
+  fontWeight: 500,
+  color: '#e6f7ff',
+  backgroundColor: '#111d2c',
+  border: '1px solid #15395b',
+  borderRadius: '16px',
+  lineHeight: '1.4',
+},
 };
 
 export default Navbar;
