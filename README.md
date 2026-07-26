@@ -400,6 +400,13 @@ Tested with [golang-http-benchmark](https://github.com/leon-huang-tech/golang-ht
 ### Order List
 ![Orders](docs/orders.png)
 
+### AI Chat
+![Chat](docs/chat.png)
+
+### Knowledge Base
+![Knowledge](docs/knowledge.png)
+![Knowledge](docs/knowledge-check.png)
+
 ## Related Projects
 
 - [golang-http-benchmark](https://github.com/leon-huang-tech/golang-http-benchmark) — HTTP benchmark tool used to test this service
