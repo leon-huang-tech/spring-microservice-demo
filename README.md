@@ -18,12 +18,12 @@ API Gateway (port 8080)
       |       - JWT token generation (login)
       |       - BCrypt password encryption
       |       - Redis caching
-      |       - H2 Database
+      |       - PostgreSQL Database
       |
       +---> Order Service (port 8082)
       |       - Order management
       |       - Redis caching
-      |       - H2 Database
+      |       - PostgreSQL Database
       |       - Calls User Service via Feign
       |
       +---> AI Service (port 8083)
@@ -45,7 +45,7 @@ Monitoring: Prometheus (port 9090) + Grafana (port 3000)
 - **Spring Cloud Gateway** — Centralized API Gateway with JWT authentication filter and load balancing
 - **Eureka** — Service discovery and registration
 - **Spring Data JPA** — Database access
-- **H2** — In-memory database
+- **PostgreSQL** — In-memory database
 - **Redis** — Caching layer (toggleable via Spring Profile)
 - **OpenFeign** — Declarative service-to-service REST client
 - **Resilience4j** — Circuit breaker pattern
